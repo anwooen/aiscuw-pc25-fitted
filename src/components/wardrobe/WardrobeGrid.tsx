@@ -1,24 +1,24 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Filter } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ClothingItem } from './ClothingItem';
 import { deleteImage } from '../../utils/storage';
 import type { ClothingCategory } from '../../types';
 
+const filters: { value: ClothingCategory | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'top', label: 'Tops' },
+  { value: 'bottom', label: 'Bottoms' },
+  { value: 'shoes', label: 'Shoes' },
+  { value: 'outerwear', label: 'Outerwear' },
+  { value: 'accessory', label: 'Accessories' },
+];
+
 export const WardrobeGrid = () => {
   const { wardrobe, removeClothingItem } = useStore();
   const [selectedFilter, setSelectedFilter] = useState<ClothingCategory | 'all'>('all');
 
-  const filters: { value: ClothingCategory | 'all'; label: string }[] = [
-    { value: 'all', label: 'All' },
-    { value: 'top', label: 'Tops' },
-    { value: 'bottom', label: 'Bottoms' },
-    { value: 'shoes', label: 'Shoes' },
-    { value: 'outerwear', label: 'Outerwear' },
-    { value: 'accessory', label: 'Accessories' },
-  ];
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       // Delete from IndexedDB
       await deleteImage(id);
@@ -27,17 +27,20 @@ export const WardrobeGrid = () => {
     } catch (error) {
       console.error('Failed to delete item:', error);
     }
-  };
+  }, [removeClothingItem]);
 
-  const filteredWardrobe = selectedFilter === 'all'
-    ? wardrobe
-    : wardrobe.filter(item => item.category === selectedFilter);
+  const filteredWardrobe = useMemo(() =>
+    selectedFilter === 'all'
+      ? wardrobe
+      : wardrobe.filter(item => item.category === selectedFilter),
+    [selectedFilter, wardrobe]
+  );
 
-  // Get counts for each category
-  const getCategoryCount = (category: ClothingCategory | 'all') => {
+  // Get counts for each category - memoized
+  const getCategoryCount = useCallback((category: ClothingCategory | 'all') => {
     if (category === 'all') return wardrobe.length;
     return wardrobe.filter(item => item.category === category).length;
-  };
+  }, [wardrobe]);
 
   return (
     <div className="space-y-6">
@@ -91,7 +94,31 @@ export const WardrobeGrid = () => {
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12">
           <div className="text-center">
-            <div className="text-6xl mb-4">👗</div>
+            {/* UW Purple Spinning Animation */}
+            <div className="flex justify-center mb-6">
+              <div className="relative w-24 h-24">
+                {/* Gold background circle */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-uw-gold to-yellow-400"></div>
+                {/* Spinning purple gradient track */}
+                <div className="absolute inset-0 rounded-full animate-spin" style={{ animationDuration: '1s' }}>
+                  <div className="w-full h-full rounded-full"
+                       style={{
+                         background: `conic-gradient(
+                           from 0deg,
+                           transparent 0deg,
+                           transparent 270deg,
+                           #8b5cf6 270deg,
+                           #a78bfa 300deg,
+                           #c4b5fd 330deg,
+                           #7c3aed 360deg
+                         )`
+                       }}>
+                  </div>
+                </div>
+                {/* Inner gold circle to create ring effect */}
+                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-uw-gold to-yellow-400 shadow-lg"></div>
+              </div>
+            </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               {selectedFilter === 'all' ? 'No items yet' : `No ${selectedFilter}s yet`}
             </h3>

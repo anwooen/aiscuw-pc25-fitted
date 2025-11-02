@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { getWardrobeStats, meetsMinimumRequirements } from '../utils/outfitGenerator';
 
@@ -6,8 +7,9 @@ export const useWardrobe = () => {
   const addClothingItem = useStore((state) => state.addClothingItem);
   const removeClothingItem = useStore((state) => state.removeClothingItem);
 
-  const stats = getWardrobeStats(wardrobe);
-  const canSwipe = meetsMinimumRequirements(wardrobe);
+  // Memoize expensive calculations
+  const stats = useMemo(() => getWardrobeStats(wardrobe), [wardrobe]);
+  const canSwipe = useMemo(() => meetsMinimumRequirements(wardrobe), [wardrobe]);
 
   return {
     wardrobe,

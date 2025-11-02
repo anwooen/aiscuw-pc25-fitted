@@ -48,9 +48,27 @@ export const useStore = create<AppState>()(
         })),
 
       addOutfit: (outfit: Outfit) =>
-        set((state) => ({
-          outfitHistory: [...state.outfitHistory, outfit],
-        })),
+        set((state) => {
+          // Check if an outfit with the same items already exists
+          const isDuplicate = state.outfitHistory.some(existingOutfit => {
+            // Compare item IDs (sorted to ensure order doesn't matter)
+            const existingItemIds = existingOutfit.items.map(item => item.id).sort();
+            const newItemIds = outfit.items.map(item => item.id).sort();
+
+            // Check if arrays are equal
+            return existingItemIds.length === newItemIds.length &&
+                   existingItemIds.every((id, index) => id === newItemIds[index]);
+          });
+
+          // Only add if it's not a duplicate
+          if (isDuplicate) {
+            return state; // Return unchanged state
+          }
+
+          return {
+            outfitHistory: [...state.outfitHistory, outfit],
+          };
+        }),
 
       setTodaysPick: (outfit: Outfit | null) =>
         set({ todaysPick: outfit }),
@@ -71,6 +89,26 @@ export const useStore = create<AppState>()(
           todaysPick: null,
           dailySuggestions: [],
           theme: 'light',
+        }),
+
+      removeDuplicateOutfits: () =>
+        set((state) => {
+          const uniqueOutfits: Outfit[] = [];
+          const seenItemSets = new Set<string>();
+
+          for (const outfit of state.outfitHistory) {
+            // Create a unique key for this outfit based on sorted item IDs
+            const itemIds = outfit.items.map(item => item.id).sort().join(',');
+
+            if (!seenItemSets.has(itemIds)) {
+              seenItemSets.add(itemIds);
+              uniqueOutfits.push(outfit);
+            }
+          }
+
+          return {
+            outfitHistory: uniqueOutfits,
+          };
         }),
     }),
     {

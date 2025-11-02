@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Trash2, Tag } from 'lucide-react';
 import type { ClothingItem as ClothingItemType } from '../../types';
 import { getImageURL } from '../../utils/storage';
@@ -8,7 +8,7 @@ interface ClothingItemProps {
   onDelete: (id: string) => void;
 }
 
-export const ClothingItem = ({ item, onDelete }: ClothingItemProps) => {
+export const ClothingItem = memo(({ item, onDelete }: ClothingItemProps) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -121,4 +121,6 @@ export const ClothingItem = ({ item, onDelete }: ClothingItemProps) => {
       </div>
     </div>
   );
-};
+});
+
+ClothingItem.displayName = 'ClothingItem';

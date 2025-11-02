@@ -45,6 +45,7 @@ export interface AppState {
   setDailySuggestions: (suggestions: Outfit[]) => void;
   toggleTheme: () => void;
   resetApp: () => void;
+  removeDuplicateOutfits: () => void;
 }
 
 // Minimum requirements for unlocking swipe mode
