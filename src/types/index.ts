@@ -32,14 +32,17 @@ export interface AppState {
   wardrobe: ClothingItem[];
   outfitHistory: Outfit[];
   todaysPick: Outfit | null;
+  dailySuggestions: Outfit[];
   theme: 'light' | 'dark';
 
   // Actions
   setProfile: (profile: UserProfile) => void;
+  completeOnboarding: (stylePreferences: Record<StylePreference, number>, favoriteColors: string[]) => void;
   addClothingItem: (item: ClothingItem) => void;
   removeClothingItem: (id: string) => void;
   addOutfit: (outfit: Outfit) => void;
   setTodaysPick: (outfit: Outfit | null) => void;
+  setDailySuggestions: (suggestions: Outfit[]) => void;
   toggleTheme: () => void;
   resetApp: () => void;
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AppState, ClothingItem, Outfit, UserProfile } from '../types';
+import type { AppState, ClothingItem, Outfit, UserProfile, StylePreference } from '../types';
 
 const initialProfile: UserProfile = {
   hasCompletedOnboarding: false,
@@ -21,9 +21,21 @@ export const useStore = create<AppState>()(
       wardrobe: [],
       outfitHistory: [],
       todaysPick: null,
+      dailySuggestions: [],
       theme: 'light',
 
       setProfile: (profile: UserProfile) => set({ profile }),
+
+      completeOnboarding: (stylePreferences: Record<StylePreference, number>, favoriteColors: string[]) =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            hasCompletedOnboarding: true,
+            stylePreferences,
+            favoriteColors,
+            completedAt: new Date(),
+          },
+        })),
 
       addClothingItem: (item: ClothingItem) =>
         set((state) => ({
@@ -43,6 +55,9 @@ export const useStore = create<AppState>()(
       setTodaysPick: (outfit: Outfit | null) =>
         set({ todaysPick: outfit }),
 
+      setDailySuggestions: (suggestions: Outfit[]) =>
+        set({ dailySuggestions: suggestions }),
+
       toggleTheme: () =>
         set((state) => ({
           theme: state.theme === 'light' ? 'dark' : 'light',
@@ -54,6 +69,7 @@ export const useStore = create<AppState>()(
           wardrobe: [],
           outfitHistory: [],
           todaysPick: null,
+          dailySuggestions: [],
           theme: 'light',
         }),
     }),
