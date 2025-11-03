@@ -12,7 +12,12 @@ export const Welcome: React.FC<WelcomeProps> = ({ onGetStarted }) => {
       <div className="text-center max-w-2xl">
         {/* Logo/Icon */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white/10 p-6 rounded-full backdrop-blur-sm">
+          <div
+            className="p-6 rounded-full backdrop-blur-sm"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))'
+            }}
+          >
             <Shirt className="w-20 h-20 text-white" strokeWidth={1.5} />
           </div>
         </div>
@@ -23,7 +28,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onGetStarted }) => {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-xl text-uw-gold mb-3">
+        <p className="text-xl text-white mb-3">
           Your UW Wardrobe Assistant
         </p>
 

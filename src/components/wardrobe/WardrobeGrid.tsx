@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Filter } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ClothingItem } from './ClothingItem';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { deleteImage } from '../../utils/storage';
 import type { ClothingCategory } from '../../types';
 
@@ -94,31 +95,8 @@ export const WardrobeGrid = () => {
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12">
           <div className="text-center">
-            {/* UW Purple Spinning Animation */}
-            <div className="flex justify-center mb-6">
-              <div className="relative w-24 h-24">
-                {/* Gold background circle */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-uw-gold to-yellow-400"></div>
-                {/* Spinning purple gradient track */}
-                <div className="absolute inset-0 rounded-full animate-spin" style={{ animationDuration: '1s' }}>
-                  <div className="w-full h-full rounded-full"
-                       style={{
-                         background: `conic-gradient(
-                           from 0deg,
-                           transparent 0deg,
-                           transparent 270deg,
-                           #8b5cf6 270deg,
-                           #a78bfa 300deg,
-                           #c4b5fd 330deg,
-                           #7c3aed 360deg
-                         )`
-                       }}>
-                  </div>
-                </div>
-                {/* Inner gold circle to create ring effect */}
-                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-uw-gold to-yellow-400 shadow-lg"></div>
-              </div>
-            </div>
+            {/* Loading Spinner */}
+            <LoadingSpinner size="lg" className="mb-6" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               {selectedFilter === 'all' ? 'No items yet' : `No ${selectedFilter}s yet`}
             </h3>

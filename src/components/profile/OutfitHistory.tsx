@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, memo } from 'react';
 import { useStore } from '../../store/useStore';
 import { History, Calendar, Heart, Filter } from 'lucide-react';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 import type { Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
 
@@ -128,31 +129,8 @@ export const OutfitHistory = () => {
         {/* Empty State */}
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex flex-col items-center justify-center py-12">
-            {/* UW Purple Spinning Animation */}
-            <div className="flex justify-center mb-6">
-              <div className="relative w-24 h-24">
-                {/* Gold background circle */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-uw-gold to-yellow-400"></div>
-                {/* Spinning purple gradient track */}
-                <div className="absolute inset-0 rounded-full animate-spin" style={{ animationDuration: '1s' }}>
-                  <div className="w-full h-full rounded-full"
-                       style={{
-                         background: `conic-gradient(
-                           from 0deg,
-                           transparent 0deg,
-                           transparent 270deg,
-                           #8b5cf6 270deg,
-                           #a78bfa 300deg,
-                           #c4b5fd 330deg,
-                           #7c3aed 360deg
-                         )`
-                       }}>
-                  </div>
-                </div>
-                {/* Inner gold circle to create ring effect */}
-                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-uw-gold to-yellow-400 shadow-lg"></div>
-              </div>
-            </div>
+            {/* Loading Spinner */}
+            <LoadingSpinner size="lg" className="mb-6" />
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
               No Outfit History Yet
             </h2>
