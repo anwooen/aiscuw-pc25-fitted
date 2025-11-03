@@ -14,6 +14,7 @@
     "framer-motion": "^11.0.0",
     "idb": "^8.0.0",
     "lucide-react": "^0.344.0",
+    "openai": "^6.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zustand": "^4.5.0"
