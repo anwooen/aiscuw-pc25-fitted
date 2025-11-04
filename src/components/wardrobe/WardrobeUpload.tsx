@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Camera, X, Sparkles, RefreshCw } from 'lucide-react';
+import { Upload, Camera, X, Sparkles, RefreshCw, Layers } from 'lucide-react';
 import type { ClothingCategory, AIClothingAnalysis } from '../../types';
 import { compressImage, extractColors, isValidImage } from '../../utils/imageCompression';
 import { saveImage } from '../../utils/storage';
@@ -7,6 +7,7 @@ import { useStore } from '../../store/useStore';
 import { Button } from '../shared/Button';
 import { analyzeClothing } from '../../services/api';
 import { useImageConverter } from '../../hooks/useImageConverter';
+import { BatchUpload } from './BatchUpload';
 
 export const WardrobeUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -17,6 +18,7 @@ export const WardrobeUpload = () => {
   const [useAI, setUseAI] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIClothingAnalysis | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -169,6 +171,16 @@ export const WardrobeUpload = () => {
     }
   };
 
+  // If in batch mode, render BatchUpload component
+  if (batchMode) {
+    return (
+      <BatchUpload
+        onComplete={() => setBatchMode(false)}
+        onCancel={() => setBatchMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
@@ -176,20 +188,31 @@ export const WardrobeUpload = () => {
           Add Clothing Item
         </h2>
 
-        {/* AI Toggle */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={useAI}
-            onChange={(e) => setUseAI(e.target.checked)}
-            className="sr-only peer"
-          />
-          <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-uw-purple/20 dark:peer-focus:ring-uw-purple/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-uw-purple"></div>
-          <span className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <Sparkles className="w-4 h-4" />
-            AI Analysis
-          </span>
-        </label>
+        <div className="flex items-center gap-4">
+          {/* Batch Mode Button */}
+          <button
+            onClick={() => setBatchMode(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-uw-purple/10 text-uw-purple dark:bg-uw-purple/20 dark:text-uw-gold rounded-lg hover:bg-uw-purple/20 dark:hover:bg-uw-purple/30 transition-colors"
+          >
+            <Layers className="w-4 h-4" />
+            <span className="text-sm font-medium">Batch Upload</span>
+          </button>
+
+          {/* AI Toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useAI}
+              onChange={(e) => setUseAI(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-uw-purple/20 dark:peer-focus:ring-uw-purple/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-uw-purple"></div>
+            <span className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Sparkles className="w-4 h-4" />
+              AI Analysis
+            </span>
+          </label>
+        </div>
       </div>
 
       {!selectedFile ? (
