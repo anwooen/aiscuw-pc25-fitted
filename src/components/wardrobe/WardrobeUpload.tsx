@@ -249,14 +249,14 @@ export const WardrobeUpload = () => {
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300">{aiAnalysis.description}</p>
               <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-full">
+                <span className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full">
                   {aiAnalysis.season}
                 </span>
-                <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded-full">
+                <span className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full">
                   {aiAnalysis.formality}
                 </span>
-                {aiAnalysis.suggestedStyles.map((style) => (
-                  <span key={style} className="px-2 py-1 bg-white dark:bg-gray-800 rounded-full">
+                {Array.from(new Set(aiAnalysis.suggestedStyles)).map((style, index) => (
+                  <span key={`${style}-${index}`} className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full">
                     {style}
                   </span>
                 ))}

@@ -24,7 +24,7 @@ const STYLE_OPTIONS: { value: StylePreference; label: string; description: strin
 const COLOR_OPTIONS = [
   { name: 'Black', hex: '#000000' },
   { name: 'White', hex: '#FFFFFF' },
-  { name: 'Navy', hex: '#001f3f' },
+  { name: 'Navy', hex: '#1e3a8a' },
   { name: 'Gray', hex: '#7f8c8d' },
   { name: 'Beige', hex: '#d4c5b9' },
   { name: 'Brown', hex: '#8b4513' },

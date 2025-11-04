@@ -5,10 +5,15 @@ import { useStore } from '../../store/useStore';
 import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
 import { SwipeControls } from './SwipeControls';
+import { Button } from '../shared/Button';
 
 const SWIPE_THRESHOLD = 100;
 
-export function SwipeInterface() {
+interface SwipeInterfaceProps {
+  onNavigate?: (view: 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings') => void;
+}
+
+export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   const { dailySuggestions, setTodaysPick, addOutfit } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -19,13 +24,6 @@ export function SwipeInterface() {
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
 
   const currentOutfit = dailySuggestions[currentIndex];
-
-  useEffect(() => {
-    // Reset when we've gone through all outfits
-    if (currentIndex >= dailySuggestions.length) {
-      setCurrentIndex(0);
-    }
-  }, [currentIndex, dailySuggestions.length]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -130,9 +128,25 @@ export function SwipeInterface() {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           All Done!
         </h2>
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-gray-500 dark:text-gray-400 mb-6">
           You've reviewed all of today's outfit suggestions.
         </p>
+
+        {/* Navigation buttons */}
+        <div className="flex gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentIndex(0)}
+          >
+            Review Again
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => onNavigate?.('todaysPick')}
+          >
+            View Today's Pick
+          </Button>
+        </div>
       </div>
     );
   }
