@@ -1,8 +1,9 @@
-import { useState, useEffect, lazy, Suspense, useCallback, useMemo } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
-import { Lock, Unlock, Sparkles, ArrowLeft, Home, Shirt, History, Settings, Moon, Sun } from 'lucide-react';
+import { useAIOutfitRecommendations } from './hooks/useAIOutfitRecommendations';
+import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, Moon, Sun, Bot, Zap } from 'lucide-react';
 import { MINIMUM_WARDROBE } from './types';
 
 // Lazy load components for code splitting
@@ -14,6 +15,7 @@ const SwipeInterface = lazy(() => import('./components/swipe/SwipeInterface').th
 const TodaysPick = lazy(() => import('./components/profile/TodaysPick').then(m => ({ default: m.TodaysPick })));
 const OutfitHistory = lazy(() => import('./components/profile/OutfitHistory').then(m => ({ default: m.OutfitHistory })));
 const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings').then(m => ({ default: m.ProfileSettings })));
+const WeatherWidget = lazy(() => import('./components/shared/WeatherWidget').then(m => ({ default: m.WeatherWidget })));
 
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
 type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings';
@@ -34,8 +36,15 @@ function App() {
   const { profile, completeOnboarding, setDailySuggestions, theme, toggleTheme, removeDuplicateOutfits } = useStore();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
   const [currentView, setCurrentView] = useState<AppView>('wardrobe');
+  const [useAIMode, setUseAIMode] = useState(false); // Toggle between AI and classic mode
   const wardrobeStats = useWardrobe();
-  const { outfits, loading } = useOutfitGenerator(10);
+
+  // Use AI or classic outfit generator based on mode
+  const classicOutfits = useOutfitGenerator(10);
+  const aiOutfits = useAIOutfitRecommendations({ useAI: useAIMode, count: 10 });
+
+  // Select the active outfit generator
+  const { outfits, loading, weather, error } = useAIMode ? aiOutfits : { ...classicOutfits, weather: null, error: null };
 
   // Clean up duplicate outfits on mount
   useEffect(() => {
@@ -234,9 +243,48 @@ function App() {
           {/* Header */}
           <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div className="container mx-auto px-4 py-4">
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-uw-purple dark:text-purple-400">Today's Picks</h1>
+
+                {/* AI Mode Toggle */}
+                <button
+                  onClick={() => setUseAIMode(!useAIMode)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    useAIMode
+                      ? 'bg-uw-purple text-white shadow-lg'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title={useAIMode ? 'Using AI Recommendations' : 'Using Classic Algorithm'}
+                >
+                  {useAIMode ? (
+                    <>
+                      <Bot className="w-5 h-5" />
+                      <span className="text-sm">AI Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" />
+                      <span className="text-sm">Classic</span>
+                    </>
+                  )}
+                </button>
               </div>
+
+              {/* Weather Widget (only show in AI mode) */}
+              {useAIMode && (
+                <div className="mt-3">
+                  <Suspense fallback={<div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />}>
+                    <WeatherWidget weather={weather} loading={loading} />
+                  </Suspense>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="mt-3 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">{error}</p>
+                </div>
+              )}
             </div>
           </header>
 

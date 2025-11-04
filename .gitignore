@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 claude.md
+.vercel
+
+# Documentation and test files
+AI_INTEGRATION_GUIDE.md
+DATASET_README.md
+test-api.js

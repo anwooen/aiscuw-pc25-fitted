@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, memo } from 'react';
 import { useStore } from '../../store/useStore';
-import { History, Calendar, Heart, Filter } from 'lucide-react';
+import { History, Calendar, Heart } from 'lucide-react';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import type { Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';

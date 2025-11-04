@@ -59,7 +59,7 @@ export const getImageURL = async (id: string): Promise<string | null> => {
 };
 
 // Convert File to Blob and compress if needed
-export const compressImage = async (file: File, maxSizeMB = 1): Promise<Blob> => {
+export const compressImage = async (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);

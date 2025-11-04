@@ -256,24 +256,6 @@ export const generateOutfits = (
   return outfits;
 };
 
-// Simple color compatibility check (legacy - kept for backwards compatibility)
-const areColorsCompatible = (items: ClothingItem[]): boolean => {
-  // Use the new scoring system - accept if average pairwise compatibility > 0.3
-  if (items.length < 2) return true;
-
-  let totalCompatibility = 0;
-  let pairs = 0;
-
-  for (let i = 0; i < items.length; i++) {
-    for (let j = i + 1; j < items.length; j++) {
-      totalCompatibility += calculateColorCompatibility(items[i], items[j]);
-      pairs++;
-    }
-  }
-
-  return pairs > 0 ? (totalCompatibility / pairs) > 0.3 : true;
-};
-
 // Check if wardrobe meets minimum requirements
 export const meetsMinimumRequirements = (wardrobe: ClothingItem[]): boolean => {
   const tops = wardrobe.filter((item) => item.category === 'top').length;
