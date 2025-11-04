@@ -12,6 +12,7 @@
   "dependencies": {
     "browser-image-compression": "^2.0.2",
     "framer-motion": "^11.0.0",
+    "heic2any": "^0.0.4",
     "idb": "^8.0.0",
     "lucide-react": "^0.344.0",
     "openai": "^6.7.0",

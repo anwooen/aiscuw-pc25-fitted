@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
-import { Upload, Camera, X, Sparkles } from 'lucide-react';
+import { Upload, Camera, X, Sparkles, RefreshCw } from 'lucide-react';
 import type { ClothingCategory, AIClothingAnalysis } from '../../types';
 import { compressImage, extractColors, isValidImage } from '../../utils/imageCompression';
 import { saveImage } from '../../utils/storage';
 import { useStore } from '../../store/useStore';
 import { Button } from '../shared/Button';
 import { analyzeClothing } from '../../services/api';
+import { useImageConverter } from '../../hooks/useImageConverter';
 
 export const WardrobeUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -20,6 +21,7 @@ export const WardrobeUpload = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const { addClothingItem, profile } = useStore();
+  const { convertImage, isConverting, progress, error: conversionError, checkIfNeedsConversion, getFormat } = useImageConverter();
 
   const categories: { value: ClothingCategory; label: string; emoji: string }[] = [
     { value: 'top', label: 'Top', emoji: '👕' },
@@ -38,7 +40,27 @@ export const WardrobeUpload = () => {
       return;
     }
 
-    setSelectedFile(file);
+    // Check if conversion is needed
+    const needsConversion = checkIfNeedsConversion(file);
+    let processedFile = file;
+
+    if (needsConversion) {
+      const format = getFormat(file);
+      console.log(`Converting ${format} image to JPEG...`);
+
+      // Convert the image
+      const converted = await convertImage(file);
+
+      if (!converted) {
+        setError(conversionError || 'Failed to convert image format. Please try a different image.');
+        return;
+      }
+
+      processedFile = converted;
+      console.log(`Successfully converted ${format} to JPEG`);
+    }
+
+    setSelectedFile(processedFile);
 
     // Create preview
     const reader = new FileReader();
@@ -51,7 +73,7 @@ export const WardrobeUpload = () => {
         await handleAIAnalysis(base64Image);
       }
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
   };
 
   const handleAIAnalysis = async (base64Image: string) => {
@@ -230,6 +252,24 @@ export const WardrobeUpload = () => {
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Image Conversion Progress */}
+          {isConverting && progress && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">{progress.message}</div>
+                  <div className="mt-1 w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progress.progress}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* AI Analysis Results */}
           {isAnalyzing && (
