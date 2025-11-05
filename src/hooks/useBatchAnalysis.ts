@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { AIClothingAnalysis, ClothingCategory } from '../types';
 import { analyzeClothing } from '../services/api';
 import { convertImageIfNeeded } from '../utils/imageFormatConverter';
+import { processImageForAI } from '../utils/backgroundRemoval';
 
 export interface QueuedFile {
   id: string;
@@ -151,34 +152,42 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
 
   /**
    * Process a single file
+   * Phase 11B: Now includes automatic background removal
    */
   const processFile = async (queuedFile: QueuedFile): Promise<AnalysisResult> => {
     try {
-      // Convert image format if needed (HEIC, WebP, etc.)
+      // Step 1: Convert image format if needed (HEIC, WebP, etc.)
       const convertedFile = await convertImageIfNeeded(queuedFile.file);
 
-      // Convert to base64
+      // Step 2: Background removal (Phase 11B - ALWAYS RUNS)
+      console.log(`Phase 11B: Processing ${queuedFile.originalName} with background removal...`);
+      const backgroundRemovedBlob = await processImageForAI(convertedFile);
+
+      // Step 3: Convert to base64
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
-        reader.readAsDataURL(convertedFile);
+        reader.readAsDataURL(backgroundRemovedBlob);
       });
 
       const base64Image = await base64Promise;
 
-      // Call AI analysis API
+      // Step 4: Call AI analysis API (with background-removed image)
       const response = await analyzeClothing({ image: base64Image });
 
       if (!response.success || !response.analysis) {
         throw new Error(response.error || 'Analysis failed');
       }
 
+      // Phase 11B: Use confidence from API response
+      const confidence = response.analysis.confidence ?? 1.0;
+
       return {
         id: queuedFile.id,
         analysis: response.analysis,
         status: 'success',
-        confidence: 1.0, // Default to high confidence for now
+        confidence,
       };
     } catch (error) {
       console.error(`Failed to analyze ${queuedFile.originalName}:`, error);

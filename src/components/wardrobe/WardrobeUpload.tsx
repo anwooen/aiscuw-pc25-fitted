@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Camera, X, Sparkles, RefreshCw, Layers } from 'lucide-react';
+import { Upload, Camera, X, Sparkles, RefreshCw, Layers, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { ClothingCategory, AIClothingAnalysis } from '../../types';
 import { compressImage, extractColors, isValidImage } from '../../utils/imageCompression';
 import { saveImage } from '../../utils/storage';
@@ -7,6 +7,7 @@ import { useStore } from '../../store/useStore';
 import { Button } from '../shared/Button';
 import { analyzeClothing } from '../../services/api';
 import { useImageConverter } from '../../hooks/useImageConverter';
+import { useBackgroundRemoval } from '../../hooks/useBackgroundRemoval';
 import { BatchUpload } from './BatchUpload';
 
 export const WardrobeUpload = () => {
@@ -24,6 +25,7 @@ export const WardrobeUpload = () => {
 
   const { addClothingItem, profile } = useStore();
   const { convertImage, isConverting, progress, error: conversionError, checkIfNeedsConversion, getFormat } = useImageConverter();
+  const backgroundRemoval = useBackgroundRemoval();
 
   const categories: { value: ClothingCategory; label: string; emoji: string }[] = [
     { value: 'top', label: 'Top', emoji: '👕' },
@@ -42,7 +44,7 @@ export const WardrobeUpload = () => {
       return;
     }
 
-    // Check if conversion is needed
+    // Step 1: Format conversion (if needed)
     const needsConversion = checkIfNeedsConversion(file);
     let processedFile = file;
 
@@ -62,7 +64,11 @@ export const WardrobeUpload = () => {
       console.log(`Successfully converted ${format} to JPEG`);
     }
 
-    setSelectedFile(processedFile);
+    // Step 2: Background removal (ALWAYS RUNS - Phase 11B)
+    console.log('Phase 11B: Starting automatic background removal...');
+    const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
+
+    setSelectedFile(backgroundRemovedFile);
 
     // Create preview
     const reader = new FileReader();
@@ -70,12 +76,12 @@ export const WardrobeUpload = () => {
       const base64Image = reader.result as string;
       setPreviewUrl(base64Image);
 
-      // If AI is enabled, analyze the image
+      // Step 3: If AI is enabled, analyze the image
       if (useAI) {
         await handleAIAnalysis(base64Image);
       }
     };
-    reader.readAsDataURL(processedFile);
+    reader.readAsDataURL(backgroundRemovedFile);
   };
 
   const handleAIAnalysis = async (base64Image: string) => {
@@ -294,6 +300,46 @@ export const WardrobeUpload = () => {
             </div>
           )}
 
+          {/* Background Removal Progress - Phase 11B */}
+          {backgroundRemoval.status === 'processing' && (
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+              <div className="flex items-center gap-2 text-purple-700 dark:text-purple-400">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">
+                    {backgroundRemoval.stage || 'Processing image...'}
+                  </div>
+                  <div className="mt-1 w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                    <div
+                      className="bg-purple-600 dark:bg-purple-400 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${backgroundRemoval.progress}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Background Removal Success */}
+          {backgroundRemoval.status === 'success' && backgroundRemoval.hasTransparency && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <CheckCircle className="w-5 h-5" />
+                <span className="text-sm font-medium">Background removed successfully!</span>
+              </div>
+            </div>
+          )}
+
+          {/* Background Removal Fallback */}
+          {backgroundRemoval.status === 'success' && !backgroundRemoval.hasTransparency && (
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="text-sm font-medium">Using smart crop (background removal unavailable)</span>
+              </div>
+            </div>
+          )}
+
           {/* AI Analysis Results */}
           {isAnalyzing && (
             <div className="p-4 bg-uw-purple/10 border border-uw-purple/20 rounded-lg">
@@ -305,12 +351,48 @@ export const WardrobeUpload = () => {
           )}
 
           {aiAnalysis && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
-                <Sparkles className="w-5 h-5" />
-                <span className="text-sm font-semibold">AI Analysis Complete</span>
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-3">
+              <div className="flex items-center justify-between text-green-700 dark:text-green-400 mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-sm font-semibold">AI Analysis Complete</span>
+                </div>
+                {/* Phase 11B: Confidence Score */}
+                {aiAnalysis.confidence !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-medium">
+                      {(aiAnalysis.confidence * 100).toFixed(0)}% confident
+                    </span>
+                    {aiAnalysis.confidence >= 0.8 ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : aiAnalysis.confidence >= 0.5 ? (
+                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Description */}
               <p className="text-sm text-gray-700 dark:text-gray-300">{aiAnalysis.description}</p>
+
+              {/* Phase 11B: Reasoning */}
+              {aiAnalysis.reasoning && (
+                <div className="text-xs text-gray-600 dark:text-gray-400 italic">
+                  "{aiAnalysis.reasoning}"
+                </div>
+              )}
+
+              {/* Phase 11B: Alternate Category Warning */}
+              {aiAnalysis.alternateCategory && aiAnalysis.alternateConfidence && aiAnalysis.alternateConfidence > 0.3 && (
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded text-xs">
+                  <AlertTriangle className="w-3 h-3 inline mr-1" />
+                  Could also be <strong>{aiAnalysis.alternateCategory}</strong> ({(aiAnalysis.alternateConfidence * 100).toFixed(0)}% confidence). Please review.
+                </div>
+              )}
+
+              {/* Tags */}
               <div className="flex flex-wrap gap-2 text-xs">
                 <span className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full">
                   {aiAnalysis.season}

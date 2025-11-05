@@ -32,18 +32,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Prepare the prompt for GPT-4o Vision
-    const systemPrompt = `You are a fashion analysis AI. Analyze the clothing item in the image and provide detailed information in JSON format.
+    const systemPrompt = `You are a fashion analysis AI specialized in clothing categorization and analysis.
+
+CRITICAL INSTRUCTIONS - PHASE 11B ENHANCED DETECTION:
+1. Focus ONLY on the main clothing item in the center of the image
+2. IGNORE any background elements (walls, furniture, floors, hangers, people, etc.)
+3. IGNORE any people or body parts - focus solely on the clothing itself
+4. If the background has been removed (transparent/white), analyze ONLY the visible clothing
+5. Extract colors ONLY from the clothing fabric, NOT from any background elements
+6. Provide confidence scores for your categorization (0.0 to 1.0)
+7. If uncertain, provide an alternate category suggestion
 
 Your response must be valid JSON with this exact structure:
 {
-  "description": "A detailed 2-3 sentence description of the item",
+  "description": "A detailed 2-3 sentence description of the clothing item",
   "suggestedCategory": "top|bottom|shoes|accessory|outerwear",
   "detectedColors": ["array", "of", "color", "names"],
   "suggestedStyles": ["casual|formal|streetwear|athletic|preppy"],
   "season": "spring|summer|fall|winter|all-season",
   "formality": "casual|business-casual|formal",
-  "occasion": ["work", "casual", "gym", etc]
+  "occasion": ["work", "casual", "gym", etc],
+  "confidence": 0.95,
+  "reasoning": "Explain why you chose this category (mention key features like collar, sleeves, etc.)",
+  "alternateCategory": "outerwear",
+  "alternateConfidence": 0.15,
+  "mainSubjectDetected": true,
+  "backgroundRemoved": true
 }
+
+CONFIDENCE SCORING GUIDE:
+- 0.9-1.0: Very clear identification (e.g., obvious t-shirt with clear neckline)
+- 0.7-0.89: Clear identification with minor ambiguity (e.g., could be top or outerwear)
+- 0.5-0.69: Moderate uncertainty (e.g., cropped image, unclear category)
+- Below 0.5: High uncertainty (suggest user manual selection)
 
 Be specific about colors (e.g., "navy blue" not just "blue"). Include multiple style tags if appropriate.`;
 
@@ -76,8 +97,8 @@ Be specific about colors (e.g., "navy blue" not just "blue"). Include multiple s
           ],
         },
       ],
-      max_tokens: 500,
-      temperature: 0.3, // Lower temperature for more consistent JSON output
+      max_tokens: 600, // Increased for additional confidence fields
+      temperature: 0, // Zero temperature for maximum consistency
       response_format: { type: 'json_object' },
     });
 

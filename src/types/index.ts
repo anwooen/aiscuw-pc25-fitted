@@ -12,6 +12,13 @@ export interface AIClothingAnalysis {
   season: 'spring' | 'summer' | 'fall' | 'winter' | 'all-season';
   formality: 'casual' | 'business-casual' | 'formal';
   occasion?: string[];
+  // Phase 11B: Enhanced AI Detection
+  confidence?: number; // 0-1 score for category detection
+  reasoning?: string; // Why AI chose this category
+  alternateCategory?: ClothingCategory; // Second guess
+  alternateConfidence?: number; // Confidence in alternate
+  backgroundRemoved?: boolean; // Was background removed?
+  mainSubjectDetected?: boolean; // Was clothing clearly detected?
 }
 
 export interface ClothingItem {

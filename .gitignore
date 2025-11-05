@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 claude.md
 .vercel
+PHASE_11B_SUMMARY.md
 
 # Documentation and test files
 AI_INTEGRATION_GUIDE.md
