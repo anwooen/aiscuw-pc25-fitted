@@ -1,4 +1,4 @@
-import { X, Heart, ArrowLeft, ArrowRight } from 'lucide-react';
+import { X, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface SwipeControlsProps {
   onDislike: () => void;
@@ -52,7 +52,7 @@ export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProp
             }}
           >
             <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Heart className="absolute inset-0 m-auto w-12 h-12" style={{ color: '#ffffff', fill: '#ffffff' }} strokeWidth={0} />
+            <Check className="absolute inset-0 m-auto w-12 h-12" style={{ color: '#22c55e', fill: '#22c55e' }} strokeWidth={0} />
           </div>
           <span className="text-sm font-bold text-uw-purple dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
             Like
