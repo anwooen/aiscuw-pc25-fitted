@@ -19,7 +19,7 @@ export async function removeBackground(
 
     // Configure background removal
     const blob = await mlRemoveBackground(imageFile, {
-      progress: (key, current, total) => {
+      progress: (_key, current, total) => {
         const percentage = Math.round((current / total) * 100);
         onProgress?.(percentage, 'Removing background...');
       },

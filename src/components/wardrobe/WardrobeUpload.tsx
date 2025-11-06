@@ -15,6 +15,7 @@ export const WardrobeUpload = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showUploadSpinner, setShowUploadSpinner] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useAI, setUseAI] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -38,9 +39,13 @@ export const WardrobeUpload = () => {
   const handleFileSelect = async (file: File) => {
     setError(null);
     setAiAnalysis(null);
+    
+    // Show spinner immediately when file is selected - will stay visible through all processing
+    setShowUploadSpinner(true);
 
     if (!isValidImage(file)) {
       setError('Please select a valid image file');
+      setShowUploadSpinner(false);
       return;
     }
 
@@ -57,6 +62,7 @@ export const WardrobeUpload = () => {
 
       if (!converted) {
         setError(conversionError || 'Failed to convert image format. Please try a different image.');
+        setShowUploadSpinner(false);
         return;
       }
 
@@ -67,6 +73,8 @@ export const WardrobeUpload = () => {
     // Step 2: Background removal (ALWAYS RUNS - Phase 11B)
     console.log('Phase 11B: Starting automatic background removal...');
     const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
+    // Keep spinner visible after background removal - more processing may be needed
+    setShowUploadSpinner(true);
 
     setSelectedFile(backgroundRemovedFile);
 
@@ -87,6 +95,8 @@ export const WardrobeUpload = () => {
   const handleAIAnalysis = async (base64Image: string) => {
     setIsAnalyzing(true);
     setError(null);
+    // Keep spinner visible during AI processing
+    setShowUploadSpinner(true);
 
     try {
       const response = await analyzeClothing({
@@ -104,8 +114,11 @@ export const WardrobeUpload = () => {
     } catch (err) {
       console.error('AI analysis error:', err);
       setError('AI analysis failed. You can still add the item manually.');
+      // Don't hide spinner on AI fail - user can still upload without AI
     } finally {
       setIsAnalyzing(false);
+      // Keep spinner visible after analysis - upload may still be pending
+      setShowUploadSpinner(true);
     }
   };
 
@@ -131,6 +144,7 @@ export const WardrobeUpload = () => {
     setError(null);
     setAiAnalysis(null);
     setIsAnalyzing(false);
+    setShowUploadSpinner(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
@@ -143,6 +157,8 @@ export const WardrobeUpload = () => {
 
     setIsUploading(true);
     setError(null);
+    // Ensure spinner stays visible during final upload
+    setShowUploadSpinner(true);
 
     try {
       // Compress image
@@ -172,8 +188,10 @@ export const WardrobeUpload = () => {
     } catch (err) {
       console.error('Upload error:', err);
       setError('Failed to upload image. Please try again.');
+      setShowUploadSpinner(false); // Hide spinner on error
     } finally {
       setIsUploading(false);
+      // Note: handleCancel() will reset spinner state on success
     }
   };
 
@@ -228,8 +246,26 @@ export const WardrobeUpload = () => {
             <button
               onClick={handleUploadClick}
               className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+              aria-busy={showUploadSpinner || isConverting || backgroundRemoval.status === 'processing' || isAnalyzing}
             >
-              <Upload className="w-12 h-12 text-gray-400 mb-2" />
+              {/* Replace the upload icon with a themed spinner while processing */}
+              {showUploadSpinner || isConverting || backgroundRemoval.status === 'processing' || isAnalyzing ? (
+                <div className="w-12 h-12 mb-2 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full animate-spin"
+                       style={{
+                         borderTopWidth: '3px',
+                         borderRightWidth: '3px',
+                         borderBottomWidth: '3px',
+                         borderLeftWidth: '3px',
+                         borderStyle: 'solid',
+                         borderColor: 'transparent',
+                         borderTopColor: 'var(--uw-purple, #7c3aed)'
+                       }}
+                  />
+                </div>
+              ) : (
+                <Upload className="w-12 h-12 text-gray-400 mb-2" />
+              )}
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Upload Photo
               </span>
