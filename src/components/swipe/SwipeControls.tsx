@@ -45,16 +45,11 @@ export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProp
           className="group relative flex flex-col items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Like outfit"
         >
-          <div
-            className="relative w-24 h-24 rounded-full shadow-lg hover:shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95"
-            style={{
-              background: 'linear-gradient(to bottom right, #4b2e83, #7c3aed)'
-            }}
-          >
-            <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Check className="absolute inset-0 m-auto w-12 h-12" style={{ color: '#22c55e', fill: '#22c55e' }} strokeWidth={0} />
+          <div className="relative w-20 h-20 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-200 border-2 border-gray-200 dark:border-gray-700 hover:scale-110 active:scale-95 hover:border-purple-300 dark:hover:border-purple-700">
+            "absolute inset-0 rounded-full bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Check className="absolute inset-0 m-auto w-10 h-10 text-purple-500" strokeWidth={2.5} />
           </div>
-          <span className="text-sm font-bold text-uw-purple dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors">
             Like
           </span>
         </button>
