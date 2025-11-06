@@ -46,7 +46,7 @@ export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProp
           aria-label="Like outfit"
         >
           <div className="relative w-20 h-20 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-200 border-2 border-gray-200 dark:border-gray-700 hover:scale-110 active:scale-95 hover:border-purple-300 dark:hover:border-purple-700">
-            "absolute inset-0 rounded-full bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 rounded-full bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <Check className="absolute inset-0 m-auto w-10 h-10 text-purple-500" strokeWidth={2.5} />
           </div>
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors">

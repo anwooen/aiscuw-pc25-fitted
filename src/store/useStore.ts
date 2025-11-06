@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AppState, ClothingItem, Outfit, UserProfile, StylePreference } from '../types';
+import type { AppState, ClothingItem, Outfit, UserProfile, StylePreference, OutfitHistoryItem } from '../types';
 
 const initialProfile: UserProfile = {
   hasCompletedOnboarding: false,
@@ -47,28 +47,40 @@ export const useStore = create<AppState>()(
           wardrobe: state.wardrobe.filter((item) => item.id !== id),
         })),
 
-      addOutfit: (outfit: Outfit) =>
+      addToHistory: (outfit: Outfit, action: 'like' | 'dislike') => {
+        // Only add if it's a like action
+        if (action !== 'like') return;
+        
         set((state) => {
-          // Check if an outfit with the same items already exists
-          const isDuplicate = state.outfitHistory.some(existingOutfit => {
-            // Compare item IDs (sorted to ensure order doesn't matter)
-            const existingItemIds = existingOutfit.items.map(item => item.id).sort();
+          // Check for duplicates
+          const isDuplicate = state.outfitHistory.some((historyItem: OutfitHistoryItem) => {
+            const existingItemIds = historyItem.outfit.items.map(item => item.id).sort();
             const newItemIds = outfit.items.map(item => item.id).sort();
-
-            // Check if arrays are equal
             return existingItemIds.length === newItemIds.length &&
                    existingItemIds.every((id, index) => id === newItemIds[index]);
           });
 
-          // Only add if it's not a duplicate
           if (isDuplicate) {
-            return state; // Return unchanged state
+            return state;
           }
 
-          return {
-            outfitHistory: [...state.outfitHistory, outfit],
+          const historyItem: OutfitHistoryItem = {
+            id: `${Date.now()}-${Math.random()}`,
+            outfit,
+            timestamp: Date.now(),
+            action, // Will always be 'like'
           };
-        }),
+
+          return {
+            outfitHistory: [historyItem, ...state.outfitHistory],
+          };
+        });
+      },
+
+      removeFromHistory: (id: string) =>
+        set((state) => ({
+          outfitHistory: state.outfitHistory.filter((item) => item.id !== id),
+        })),
 
       setTodaysPick: (outfit: Outfit | null) =>
         set({ todaysPick: outfit }),
@@ -93,16 +105,15 @@ export const useStore = create<AppState>()(
 
       removeDuplicateOutfits: () =>
         set((state) => {
-          const uniqueOutfits: Outfit[] = [];
+          const uniqueOutfits: OutfitHistoryItem[] = [];
           const seenItemSets = new Set<string>();
 
-          for (const outfit of state.outfitHistory) {
-            // Create a unique key for this outfit based on sorted item IDs
-            const itemIds = outfit.items.map(item => item.id).sort().join(',');
+          for (const historyItem of state.outfitHistory) {
+            const itemIds = historyItem.outfit.items.map(item => item.id).sort().join(',');
 
             if (!seenItemSets.has(itemIds)) {
               seenItemSets.add(itemIds);
-              uniqueOutfits.push(outfit);
+              uniqueOutfits.push(historyItem);
             }
           }
 
@@ -112,7 +123,7 @@ export const useStore = create<AppState>()(
         }),
     }),
     {
-      name: 'fitted-storage', // localStorage key
+      name: 'fitted-storage',
     }
   )
 );

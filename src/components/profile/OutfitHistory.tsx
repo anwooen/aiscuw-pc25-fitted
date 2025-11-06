@@ -1,9 +1,8 @@
-import { useState, useMemo, useEffect, memo } from 'react';
+import { useState, memo, useEffect } from 'react'; // Added useEffect
 import { useStore } from '../../store/useStore';
-import { History, Calendar, Heart } from 'lucide-react';
-import { LoadingSpinner } from '../shared/LoadingSpinner';
-import type { Outfit } from '../../types';
-import { getImageURL } from '../../utils/storage';
+import { History, Trash2, X } from 'lucide-react'; // Added X for modal close
+import type { OutfitHistoryItem } from '../../types';
+import { getImageURL } from '../../utils/storage'; // Add this import
 
 // Image component that loads from IndexedDB
 const HistoryItemImage = memo(({ itemId, category }: { itemId: string; category: string }) => {
@@ -47,192 +46,106 @@ const HistoryItemImage = memo(({ itemId, category }: { itemId: string; category:
 
 HistoryItemImage.displayName = 'HistoryItemImage';
 
-export const OutfitHistory = () => {
-  const { outfitHistory } = useStore();
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [filterLiked, setFilterLiked] = useState(false);
+export function OutfitHistory() {
+  const { outfitHistory, removeFromHistory } = useStore();
+  const [selectedOutfit, setSelectedOutfit] = useState<OutfitHistoryItem | null>(null);
 
-  // Filter and sort outfits
-  const filteredOutfits = useMemo(() => {
-    let filtered = [...outfitHistory];
+  const filteredHistory = outfitHistory;
 
-    if (filterLiked) {
-      filtered = filtered.filter(outfit => outfit.liked);
-    }
-
-    // Sort by most recent first
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return filtered;
-  }, [outfitHistory, filterLiked]);
-
-  // Group outfits by date for calendar view
-  const groupedByDate = useMemo(() => {
-    const groups: Record<string, Outfit[]> = {};
-
-    filteredOutfits.forEach(outfit => {
-      const date = new Date(outfit.createdAt).toLocaleDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(outfit);
-    });
-
-    return groups;
-  }, [filteredOutfits]);
-
-  const OutfitCard = ({ outfit }: { outfit: Outfit }) => (
-    <div className="rounded-xl overflow-hidden shadow-md bg-white dark:bg-gray-800">
-      {/* Items Preview */}
-      <div className="grid grid-cols-3 gap-1 p-1">
-        {outfit.items.slice(0, 3).map((item) => (
-          <div key={item.id}>
-            <HistoryItemImage itemId={item.id} category={item.category} />
-          </div>
-        ))}
-      </div>
-
-      {/* Outfit Info */}
-      <div className="p-3">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {new Date(outfit.createdAt).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </div>
-          {outfit.liked && (
-            <Heart className="w-4 h-4 fill-red-500 text-red-500" />
-          )}
-        </div>
-        <div className="text-xs mt-1 text-gray-500">
-          {outfit.items.length} items
-        </div>
-      </div>
-    </div>
-  );
-
-  if (outfitHistory.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <div className="p-6 text-white" style={{ background: 'linear-gradient(to right, #4b2e83, #7c3aed)' }}>
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-2">
-              <History className="w-6 h-6 text-white" />
-              <h1 className="text-2xl font-bold text-white">Outfit History</h1>
-            </div>
-          </div>
-        </div>
-
-        {/* Empty State */}
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="flex flex-col items-center justify-center py-12">
-            {/* Loading Spinner */}
-            <LoadingSpinner size="lg" className="mb-6" />
-            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-              No Outfit History Yet
-            </h2>
-            <p className="text-center text-gray-600 dark:text-gray-400">
-              Start swiping and saving outfits to see them here!
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Outfit History
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {filteredHistory.length} total
             </p>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen pb-20 bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="p-6 text-white" style={{ background: 'linear-gradient(to right, #4b2e83, #7c3aed)' }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <History className="w-6 h-6 text-white" />
-              <h1 className="text-2xl font-bold text-white">Outfit History</h1>
-            </div>
-            <div className="text-sm bg-white/20 px-3 py-1 rounded-full text-white">
-              {filteredOutfits.length} {filteredOutfits.length === 1 ? 'outfit' : 'outfits'}
-            </div>
-          </div>
-
-          {/* View Toggle & Filter */}
-          <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex gap-1 bg-white/10 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white text-uw-purple'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  viewMode === 'calendar'
-                    ? 'bg-white text-uw-purple'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                Calendar
-              </button>
-            </div>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setFilterLiked(!filterLiked)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterLiked
-                  ? 'bg-white text-uw-purple'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${filterLiked ? 'fill-red-500 text-red-500' : ''}`} />
-              Liked Only
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-4xl mx-auto p-6">
-        {viewMode === 'list' ? (
-          /* List View */
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filteredOutfits.map((outfit) => (
-              <OutfitCard key={outfit.id} outfit={outfit} />
-            ))}
+        {filteredHistory.length === 0 ? (
+          <div className="text-center py-16">
+            <History className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              No liked outfits yet
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Start swiping to build your outfit collection!
+            </p>
           </div>
         ) : (
-          /* Calendar View */
-          <div className="space-y-6">
-            {Object.entries(groupedByDate).map(([date, outfits]) => (
-              <div key={date}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {date}
-                  </h3>
-                  <span className="text-sm text-gray-500">
-                    ({outfits.length})
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {outfits.map((outfit) => (
-                    <OutfitCard key={outfit.id} outfit={outfit} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredHistory.map((historyItem) => (
+              <div
+                key={historyItem.id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedOutfit(historyItem)}
+              >
+                <div className="grid grid-cols-2 gap-2 p-4">
+                  {historyItem.outfit.items.slice(0, 4).map((item) => (
+                    <HistoryItemImage key={item.id} itemId={item.id} category={item.category} />
                   ))}
+                </div>
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(historyItem.timestamp).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFromHistory(historyItem.id);
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal for outfit details */}
+      {selectedOutfit && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setSelectedOutfit(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Outfit Details
+              </h2>
+              <button
+                onClick={() => setSelectedOutfit(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {selectedOutfit.outfit.items.map((item) => (
+                  <HistoryItemImage key={item.id} itemId={item.id} category={item.category} />
+                ))}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p>Saved on: {new Date(selectedOutfit.timestamp).toLocaleString()}</p>
+                <p className="mt-2">Items: {selectedOutfit.outfit.items.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
+}

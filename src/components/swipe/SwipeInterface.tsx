@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -64,20 +64,21 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     }
   };
 
-  const handleLike = () => {
-    if (!currentOutfit) return;
-
-    setDirection('right');
-
+  const handleLike = useCallback(() => {
+    if (currentIndex >= dailySuggestions.length) return;
+    
+    const outfit = dailySuggestions[currentIndex];
     // Add to history with liked status
     const likedOutfit: Outfit = {
-      ...currentOutfit,
+      ...outfit,
       liked: true,
     };
     addOutfit(likedOutfit);
 
     // Set as today's pick if it's the first like
     setTodaysPick(likedOutfit);
+
+    setDirection('right');
 
     // Show success animation
     setShowSuccess(true);
@@ -89,27 +90,18 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       setDirection(null);
       setShowSuccess(false);
     }, 600);
-  };
+  }, [currentIndex, dailySuggestions, addOutfit, setTodaysPick]);
 
-  const handleDislike = () => {
-    if (!currentOutfit) return;
-
+  const handleDislike = useCallback(() => {
+    if (currentIndex >= dailySuggestions.length) return;
+    
+    // Don't save disliked outfits to history
     setDirection('left');
-
-    // Add to history with disliked status
-    const dislikedOutfit: Outfit = {
-      ...currentOutfit,
-      liked: false,
-    };
-    addOutfit(dislikedOutfit);
-
-    // Animate out
     setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-      x.set(0);
+      setCurrentIndex(prev => prev + 1);
       setDirection(null);
     }, 300);
-  };
+  }, [currentIndex, dailySuggestions]); // Removed addToHistory from dependencies
 
   if (!dailySuggestions.length) {
     return (

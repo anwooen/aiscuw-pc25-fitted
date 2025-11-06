@@ -50,20 +50,30 @@ export interface Outfit {
   liked?: boolean;
 }
 
+export interface OutfitHistoryItem {
+  id: string;
+  outfit: Outfit;
+  timestamp: number;
+  action: 'like' | 'dislike';
+}
+
 export interface AppState {
   profile: UserProfile;
   wardrobe: ClothingItem[];
-  outfitHistory: Outfit[];
+  outfitHistory: OutfitHistoryItem[]; // Change from Outfit[] to OutfitHistoryItem[]
   todaysPick: Outfit | null;
   dailySuggestions: Outfit[];
   theme: 'light' | 'dark';
 
-  // Actions
   setProfile: (profile: UserProfile) => void;
-  completeOnboarding: (stylePreferences: Record<StylePreference, number>, favoriteColors: string[]) => void;
+  completeOnboarding: (
+    stylePreferences: Record<StylePreference, number>,
+    favoriteColors: string[]
+  ) => void;
   addClothingItem: (item: ClothingItem) => void;
   removeClothingItem: (id: string) => void;
-  addOutfit: (outfit: Outfit) => void;
+  addToHistory: (outfit: Outfit, action: 'like' | 'dislike') => void;
+  removeFromHistory: (id: string) => void;
   setTodaysPick: (outfit: Outfit | null) => void;
   setDailySuggestions: (suggestions: Outfit[]) => void;
   toggleTheme: () => void;
