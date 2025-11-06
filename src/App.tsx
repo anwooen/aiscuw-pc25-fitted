@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
+import type { FC } from 'react';
 import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
@@ -7,8 +8,8 @@ import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, Moon, Sun, Bot,
 import { MINIMUM_WARDROBE } from './types';
 
 // Lazy load components for code splitting
-const Welcome = lazy(() => import('./components/onboarding/Welcome').then(m => ({ default: m.Welcome })));
-const FashionQuestionnaire = lazy(() => import('./components/onboarding/FashionQuestionnaire').then(m => ({ default: m.FashionQuestionnaire })));
+const Welcome = lazy<FC<{ onGetStarted: () => void }>>(() => import('./components/onboarding/Welcome').then(m => ({ default: m.Welcome })));
+const FashionQuestionnaire = lazy<FC<{ onComplete: (data: { stylePreferences: Record<string, number>; favoriteColors: string[] }) => void; onBack: () => void }>>(() => import('./components/onboarding/FashionQuestionnaire').then(m => ({ default: m.FashionQuestionnaire })));
 const WardrobeUpload = lazy(() => import('./components/wardrobe/WardrobeUpload').then(m => ({ default: m.WardrobeUpload })));
 const WardrobeGrid = lazy(() => import('./components/wardrobe/WardrobeGrid').then(m => ({ default: m.WardrobeGrid })));
 const SwipeInterface = lazy(() => import('./components/swipe/SwipeInterface').then(m => ({ default: m.SwipeInterface })));
@@ -206,7 +207,7 @@ function App() {
     return (
       <>
         <Suspense fallback={<LoadingFallback />}>
-          <TodaysPick />
+          <TodaysPick onNavigate={setCurrentView} />
         </Suspense>
         <BottomNav />
       </>

@@ -45,12 +45,13 @@ const TodayPickItemImage = memo(({ itemId, category }: { itemId: string; categor
 
 TodayPickItemImage.displayName = 'TodayPickItemImage';
 
-export const TodaysPick = () => {
-  const { todaysPick, setTodaysPick } = useStore();
+export const TodaysPick = ({ onNavigate }: { onNavigate?: (view: 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings') => void }) => {
+  const { todaysPick, setTodaysPick, wardrobe } = useStore();
 
   const handleReSwipe = () => {
     setTodaysPick(null);
     // Redirect to swipe interface will be handled by parent component
+    onNavigate?.('swipe');
   };
 
   if (!todaysPick) {
@@ -69,10 +70,16 @@ export const TodaysPick = () => {
               Swipe through outfits to pick today's look!
             </p>
             <button
-              onClick={handleReSwipe}
+              onClick={() => {
+                if (!wardrobe || wardrobe.length === 0) {
+                  onNavigate?.('wardrobe');
+                } else {
+                  handleReSwipe();
+                }
+              }}
               className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
             >
-              Start Swiping
+              {(!wardrobe || wardrobe.length === 0) ? 'Add Clothing Item' : 'Start Swiping'}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { compressImage, extractColors, isValidImage } from '../../utils/imageCom
 import { saveImage } from '../../utils/storage';
 import { useStore } from '../../store/useStore';
 import { Button } from '../shared/Button';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { analyzeClothing } from '../../services/api';
 import { useImageConverter } from '../../hooks/useImageConverter';
 import { useBackgroundRemoval } from '../../hooks/useBackgroundRemoval';
@@ -13,6 +14,7 @@ import { BatchUpload } from './BatchUpload';
 export const WardrobeUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,10 @@ export const WardrobeUpload = () => {
       return;
     }
 
-    // Step 1: Format conversion (if needed)
+  // Show uploading/processing overlay while converting/background removal/preview is created
+  setIsUploading(true);
+
+  // Step 1: Format conversion (if needed)
     const needsConversion = checkIfNeedsConversion(file);
     let processedFile = file;
 
@@ -57,6 +62,7 @@ export const WardrobeUpload = () => {
 
       if (!converted) {
         setError(conversionError || 'Failed to convert image format. Please try a different image.');
+        setIsUploading(false);
         return;
       }
 
@@ -65,23 +71,32 @@ export const WardrobeUpload = () => {
     }
 
     // Step 2: Background removal (ALWAYS RUNS - Phase 11B)
-    console.log('Phase 11B: Starting automatic background removal...');
-    const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
+    try {
+      console.log('Phase 11B: Starting automatic background removal...');
+      const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
 
-    setSelectedFile(backgroundRemovedFile);
+      setSelectedFile(backgroundRemovedFile);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Image = reader.result as string;
-      setPreviewUrl(base64Image);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Image = reader.result as string;
+        setPreviewLoaded(false);
+        setPreviewUrl(base64Image);
 
-      // Step 3: If AI is enabled, analyze the image
-      if (useAI) {
-        await handleAIAnalysis(base64Image);
-      }
-    };
-    reader.readAsDataURL(backgroundRemovedFile);
+        // Do NOT hide uploading overlay here — wait until the image actually loads
+        // Step 3: If AI is enabled, analyze the image (runs after preview is visible)
+        if (useAI) {
+          await handleAIAnalysis(base64Image);
+        }
+      };
+      reader.readAsDataURL(backgroundRemovedFile);
+    } catch (err) {
+      console.error('Background removal error:', err);
+      setError('Failed to process image. Please try another photo.');
+      setIsUploading(false);
+      return;
+    }
   };
 
   const handleAIAnalysis = async (base64Image: string) => {
@@ -131,6 +146,7 @@ export const WardrobeUpload = () => {
     setError(null);
     setAiAnalysis(null);
     setIsAnalyzing(false);
+    setPreviewLoaded(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
@@ -223,27 +239,54 @@ export const WardrobeUpload = () => {
 
       {!selectedFile ? (
         <div className="space-y-4">
-          {/* Upload buttons */}
+          {/* Upload buttons (or analyzing spinner) */}
           <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={handleUploadClick}
-              className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
-            >
-              <Upload className="w-12 h-12 text-gray-400 mb-2" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Upload Photo
-              </span>
-            </button>
+            {(isAnalyzing || isUploading || isConverting || backgroundRemoval.status === 'processing') ? (
+              <div className="col-span-2 flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-lg">
+                <LoadingSpinner size="md" />
+                <div className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {backgroundRemoval.status === 'processing'
+                    ? (backgroundRemoval.stage || 'Removing background...')
+                    : isConverting && progress
+                      ? (progress.message || 'Converting image...')
+                      : isUploading
+                        ? 'Uploading...'
+                        : 'Analyzing image...'}
+                </div>
+                {backgroundRemoval.status === 'processing' && (
+                  <div className="mt-3 w-full">
+                    <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                      <div
+                        className="bg-purple-600 dark:bg-purple-400 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${backgroundRemoval.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleUploadClick}
+                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+                >
+                  <Upload className="w-12 h-12 text-gray-400 mb-2" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Upload Photo
+                  </span>
+                </button>
 
-            <button
-              onClick={handleCameraClick}
-              className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
-            >
-              <Camera className="w-12 h-12 text-gray-400 mb-2" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Take Photo
-              </span>
-            </button>
+                <button
+                  onClick={handleCameraClick}
+                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+                >
+                  <Camera className="w-12 h-12 text-gray-400 mb-2" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Take Photo
+                  </span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Hidden file inputs */}
@@ -272,7 +315,45 @@ export const WardrobeUpload = () => {
                 src={previewUrl}
                 alt="Preview"
                 className="w-full h-full object-cover"
+                onLoad={() => {
+                  setPreviewLoaded(true);
+                  setIsUploading(false);
+                }}
+                onError={() => {
+                  setPreviewLoaded(false);
+                  setIsUploading(false);
+                  setError('Failed to load preview image.');
+                }}
               />
+            )}
+            {/* Uploading/processing overlay */}
+            {isUploading && (
+              <div className="absolute inset-0 bg-black/40 dark:bg-black/40 flex items-center justify-center z-40">
+                <div className="text-center px-4">
+                  <LoadingSpinner size="md" />
+                  <div className="mt-3 text-white font-semibold">
+                    {backgroundRemoval.status === 'processing'
+                      ? (backgroundRemoval.stage || 'Removing background...')
+                      : isConverting && progress
+                        ? (progress.message || 'Converting image...')
+                        : isUploading
+                          ? 'Uploading...'
+                          : isAnalyzing
+                            ? 'Analyzing image...'
+                            : 'Processing...'}
+                  </div>
+                  {backgroundRemoval.status === 'processing' && (
+                    <div className="mt-3 w-full">
+                      <div className="w-full bg-purple-300 dark:bg-purple-800 rounded-full h-2">
+                        <div
+                          className="bg-white/60 dark:bg-white/30 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${backgroundRemoval.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
             <button
               onClick={handleCancel}

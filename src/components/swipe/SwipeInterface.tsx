@@ -214,7 +214,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
               opacity: useTransform(x, [-100, 0], [1, 0]),
             }}
           >
-            NOPE
+            NO
           </motion.div>
           <motion.div
             className="absolute top-8 right-8 z-10 bg-green-500 text-white px-6 py-2 rounded-lg font-bold text-xl rotate-[20deg] border-4 border-green-500"
@@ -222,7 +222,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
               opacity: useTransform(x, [0, 100], [0, 1]),
             }}
           >
-            LIKE
+            YES
           </motion.div>
 
           <OutfitCard outfit={currentOutfit} />
