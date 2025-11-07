@@ -108,17 +108,21 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
    * Add files to the queue
    */
   const addFiles = useCallback(async (files: File[]) => {
-    // Enforce max batch size
-    const filesToAdd = files.slice(0, MAX_BATCH_SIZE);
+    // Use current queue length to compute remaining space
+    const currentQueueLength = state.queue.length;
+    const remaining = Math.max(MAX_BATCH_SIZE - currentQueueLength, 0);
 
-    if (files.length > MAX_BATCH_SIZE) {
-      console.warn(`Batch size limited to ${MAX_BATCH_SIZE} files. ${files.length - MAX_BATCH_SIZE} files ignored.`);
+    if (remaining <= 0) {
+      console.warn('Batch queue full - no files added');
+      return;
     }
+
+    const filesToProcess = files.slice(0, remaining);
 
     // Create queued files with previews
     const queuedFiles: QueuedFile[] = await Promise.all(
-      filesToAdd.map(async (file, index) => ({
-        id: generateFileId(file, index),
+      filesToProcess.map(async (file, index) => ({
+        id: generateFileId(file, index + currentQueueLength),
         file,
         preview: await createPreview(file),
         originalName: file.name,
@@ -130,7 +134,7 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
       queue: [...prev.queue, ...queuedFiles],
       totalFiles: prev.totalFiles + queuedFiles.length,
     }));
-  }, []);
+  }, [state.queue.length]);
 
   /**
    * Remove a file from the queue

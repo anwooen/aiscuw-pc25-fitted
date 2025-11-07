@@ -18,7 +18,6 @@ interface StepNavigationProps {
  */
 export function StepNavigation({
   currentStep,
-  totalSteps,
   onBack,
   onNext,
   onSkip,

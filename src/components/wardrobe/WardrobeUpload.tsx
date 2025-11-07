@@ -97,7 +97,7 @@ export const WardrobeUpload = () => {
       if (response.success && response.analysis) {
         setAiAnalysis(response.analysis);
         // Auto-select the suggested category (user can still override)
-        setSelectedCategory(response.analysis.suggestedCategory);
+    setSelectedCategory(response.analysis.suggestedCategory || null);
       } else {
         setError(response.error || 'Failed to analyze image with AI');
       }

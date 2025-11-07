@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Snowflake, Flame, Layers, CloudRain, User, Bike, Car, BusTrain } from 'lucide-react';
+import { Snowflake, Flame, Layers, CloudRain, User, Bike, Car, Bus } from 'lucide-react';
 import { QuestionCard } from './QuestionCard';
 
 type ActivityLevel = 'sedentary' | 'moderate' | 'active' | 'very-active';
@@ -12,11 +12,12 @@ const activityLevels: { value: ActivityLevel; label: string; description: string
   { value: 'very-active', label: 'Very Active', description: 'Athlete level' },
 ];
 
-const commuteMethods: { value: CommuteMethod; label: string; icon: typeof User }[] = [
+// icon typed as any to avoid strict component type coupling
+const commuteMethods: { value: CommuteMethod; label: string; icon: any }[] = [
   { value: 'walk', label: 'Walk', icon: User },
   { value: 'bike', label: 'Bike', icon: Bike },
   { value: 'drive', label: 'Drive', icon: Car },
-  { value: 'public-transit', label: 'Transit', icon: BusTrain },
+  { value: 'public-transit', label: 'Transit', icon: Bus },
 ];
 
 interface Step4WeatherLifestyleProps {

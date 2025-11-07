@@ -67,6 +67,8 @@ function App() {
 
   // Handle onboarding flow with useCallback for performance
   const handleGetStarted = useCallback(() => {
+    // Prefetch the questionnaire bundle to avoid a blank/flicker when switching steps
+    void import('./components/onboarding/FashionQuestionnaireNew');
     setOnboardingStep('questionnaire');
   }, []);
 
