@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppState, ClothingItem, Outfit, UserProfile, StylePreference } from '../types';
+import { applyPhase13Defaults } from '../utils/profileDefaults';
 
 const initialProfile: UserProfile = {
   hasCompletedOnboarding: false,
@@ -33,6 +34,17 @@ export const useStore = create<AppState>()(
             hasCompletedOnboarding: true,
             stylePreferences,
             favoriteColors,
+            completedAt: new Date(),
+          },
+        })),
+
+      // Phase 13: Enhanced onboarding completion with full profile
+      completeOnboardingEnhanced: (profileData: Partial<UserProfile>) =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            ...profileData,
+            hasCompletedOnboarding: true,
             completedAt: new Date(),
           },
         })),
@@ -110,9 +122,25 @@ export const useStore = create<AppState>()(
             outfitHistory: uniqueOutfits,
           };
         }),
+
+      resetOnboarding: () =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            hasCompletedOnboarding: false,
+            completedAt: undefined,
+          },
+        })),
     }),
     {
       name: 'fitted-storage', // localStorage key
+      // Phase 13: Migrate existing profiles to include new fields
+      onRehydrateStorage: () => (state) => {
+        if (state?.profile) {
+          // Apply Phase 13 defaults to existing profiles
+          state.profile = applyPhase13Defaults(state.profile);
+        }
+      },
     }
   )
 );

@@ -41,6 +41,72 @@ export interface UserProfile {
     longitude: number;
     city?: string;
   };
+
+  // Phase 13: Enhanced Personalization
+
+  // Occasion preferences (how often they dress for each)
+  occasions?: {
+    work: number;          // 0-10 (0 = never, 10 = daily)
+    class: number;         // College classes
+    gym: number;           // Athletic activities
+    casual: number;        // Everyday errands
+    social: number;        // Parties, events, dinners
+    formal: number;        // Interviews, ceremonies
+    date: number;          // Romantic outings
+  };
+
+  // Fit preferences
+  fitPreferences?: {
+    tops: 'tight' | 'fitted' | 'regular' | 'loose' | 'oversized';
+    bottoms: 'tight' | 'fitted' | 'regular' | 'loose' | 'oversized';
+    overall: 'comfort' | 'balanced' | 'fashion'; // Priority
+  };
+
+  // Weather sensitivity
+  weatherPreferences?: {
+    coldSensitivity: number;      // 0-10 (0 = never cold, 10 = always cold)
+    heatSensitivity: number;      // 0-10 (0 = never hot, 10 = always hot)
+    layeringPreference: boolean;  // Prefer layered outfits?
+    rainPreparation: boolean;     // Always prepared for rain?
+  };
+
+  // Pattern & texture preferences
+  patternPreferences?: {
+    solid: number;        // 0-10
+    striped: number;      // 0-10
+    plaid: number;        // 0-10
+    floral: number;       // 0-10
+    graphic: number;      // 0-10
+    textured: number;     // 0-10 (knit, corduroy, etc.)
+  };
+
+  // Brand & quality preferences
+  brandPreferences?: {
+    sustainability: number;       // 0-10 (how much they care)
+    brandConscious: boolean;      // Care about brand names?
+    qualityOverQuantity: boolean; // Prefer fewer high-quality pieces?
+  };
+
+  // Color combination preferences
+  colorPreferences?: {
+    monochrome: number;           // 0-10 (black/white/gray outfits)
+    colorful: number;             // 0-10 (bright, bold colors)
+    neutral: number;              // 0-10 (beige, tan, earth tones)
+    matching: boolean;            // Prefer matchy-matchy or contrasting?
+    metalAccents: boolean;        // Like gold/silver accessories?
+  };
+
+  // Lifestyle & personality
+  lifestyle?: {
+    activity: 'sedentary' | 'moderate' | 'active' | 'very-active';
+    commute: 'walk' | 'bike' | 'drive' | 'public-transit';
+    outdoorTime: number;          // 0-10 hours per week
+    fashionRiskTolerance: number; // 0-10 (0 = safe, 10 = experimental)
+  };
+
+  // Goals & aspirations
+  fashionGoals?: string[];          // e.g., "look more professional", "be more confident"
+  inspirations?: string[];          // e.g., "minimalist", "vintage", "tech-wear"
 }
 
 export interface Outfit {
@@ -61,6 +127,7 @@ export interface AppState {
   // Actions
   setProfile: (profile: UserProfile) => void;
   completeOnboarding: (stylePreferences: Record<StylePreference, number>, favoriteColors: string[]) => void;
+  completeOnboardingEnhanced: (profileData: Partial<UserProfile>) => void; // Phase 13
   addClothingItem: (item: ClothingItem) => void;
   removeClothingItem: (id: string) => void;
   addOutfit: (outfit: Outfit) => void;
@@ -69,6 +136,7 @@ export interface AppState {
   toggleTheme: () => void;
   resetApp: () => void;
   removeDuplicateOutfits: () => void;
+  resetOnboarding: () => void;
 }
 
 // Minimum requirements for unlocking swipe mode
@@ -119,6 +187,8 @@ export interface RecommendOutfitsRequest {
   preferences: Record<StylePreference, number>;
   favoriteColors: string[];
   count?: number; // number of outfits to generate (default 5-10)
+  // Phase 13: Enhanced personalization data
+  profile?: UserProfile; // Full profile with all Phase 13 fields
 }
 
 export interface RecommendOutfitsResponse {
