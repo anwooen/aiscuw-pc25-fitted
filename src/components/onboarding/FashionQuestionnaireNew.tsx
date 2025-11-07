@@ -5,6 +5,8 @@ import { ProgressTracker } from './questionnaire/ProgressTracker';
 import { StepNavigation } from './questionnaire/StepNavigation';
 import { Step1StyleVibes } from './questionnaire/Step1StyleVibes';
 import { Step5ColorsPatterns } from './questionnaire/Step5ColorsPatterns';
+import { AnimatedBackground } from './welcome/AnimatedBackground';
+import { FloatingClothing } from './welcome/FloatingClothing';
 
 interface FashionQuestionnaireNewProps {
   onComplete: (data: Partial<UserProfile>) => void;
@@ -75,15 +77,20 @@ export function FashionQuestionnaireNew({ onComplete, onBack }: FashionQuestionn
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col relative overflow-hidden"
       style={{
-        // Inline background to prevent FOUC (Flash of Unstyled Content)
-        background: 'linear-gradient(to bottom right, #4b2e83, #581c87, #6b21a8)',
-        backgroundColor: '#4b2e83',
+        background: 'linear-gradient(to bottom right, #581c87, #6b21a8)',
+        backgroundColor: '#6b21a8',
       }}
     >
+      {/* Animated Background with Parallax */}
+      <AnimatedBackground />
+
+      {/* Floating Clothing Items */}
+      <FloatingClothing />
+
       {/* Content */}
-      <div className="w-full py-8 px-4">
+      <div className="relative z-10 w-full py-8 px-4">
         <div className="max-w-5xl mx-auto">
           {/* Progress Tracker */}
           <ProgressTracker
