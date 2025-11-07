@@ -55,9 +55,32 @@ export const useStore = create<AppState>()(
         })),
 
       removeClothingItem: (id: string) =>
-        set((state) => ({
-          wardrobe: state.wardrobe.filter((item) => item.id !== id),
-        })),
+        set((state) => {
+          // Remove the item from the wardrobe
+          const newWardrobe = state.wardrobe.filter((item) => item.id !== id);
+
+          // Remove any outfits that reference this item
+          const newOutfitHistory = state.outfitHistory.filter(outfit =>
+            !outfit.items.some(item => item.id === id)
+          );
+
+          // Clear todaysPick if it references the removed item
+          const newTodaysPick = state.todaysPick && state.todaysPick.items.some(i => i.id === id)
+            ? null
+            : state.todaysPick;
+
+          // Remove any daily suggestions that include the item
+          const newDailySuggestions = state.dailySuggestions.filter(outfit =>
+            !outfit.items.some(item => item.id === id)
+          );
+
+          return {
+            wardrobe: newWardrobe,
+            outfitHistory: newOutfitHistory,
+            todaysPick: newTodaysPick,
+            dailySuggestions: newDailySuggestions,
+          } as Partial<typeof state> as any;
+        }),
 
       addOutfit: (outfit: Outfit) =>
         set((state) => {

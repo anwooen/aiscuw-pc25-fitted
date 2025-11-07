@@ -6,6 +6,7 @@ import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
 import { SwipeControls } from './SwipeControls';
 import { Button } from '../shared/Button';
+import { generateOutfits } from '../../utils/outfitGenerator';
 
 const SWIPE_THRESHOLD = 100;
 
@@ -14,7 +15,9 @@ interface SwipeInterfaceProps {
 }
 
 export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
-  const { dailySuggestions, setTodaysPick, addOutfit } = useStore();
+  const { dailySuggestions, setTodaysPick, addOutfit, setDailySuggestions } = useStore();
+  const wardrobe = useStore((s) => s.wardrobe);
+  const profile = useStore((s) => s.profile);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
@@ -112,6 +115,19 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   };
 
   if (!dailySuggestions.length) {
+    // If there are no daily suggestions but we have wardrobe items, try to generate a fallback set
+    useEffect(() => {
+      if (wardrobe.length > 0) {
+        try {
+          const generated = generateOutfits(wardrobe, profile, 10);
+          if (generated && generated.length > 0) {
+            setDailySuggestions(generated as Outfit[]);
+          }
+        } catch (err) {
+          console.error('Fallback outfit generation failed:', err);
+        }
+      }
+    }, [wardrobe, profile, setDailySuggestions]);
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
@@ -196,7 +212,6 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
             opacity,
           }}
           drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
           onDragEnd={handleDragEnd}
           animate={
             direction === 'right'

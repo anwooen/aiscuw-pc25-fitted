@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, memo } from 'react';
 import { useStore } from '../../store/useStore';
 import { History, Calendar, Heart } from 'lucide-react';
-import { LoadingSpinner } from '../shared/LoadingSpinner';
 import type { Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
 
@@ -129,8 +128,6 @@ export const OutfitHistory = () => {
         {/* Empty State */}
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex flex-col items-center justify-center py-12">
-            {/* Loading Spinner */}
-            <LoadingSpinner size="lg" className="mb-6" />
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
               No Outfit History Yet
             </h2>

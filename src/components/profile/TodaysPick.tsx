@@ -1,5 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import { useStore } from '../../store/useStore';
+import { WardrobeUpload } from '../wardrobe/WardrobeUpload';
+import { meetsMinimumRequirements } from '../../utils/outfitGenerator';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { getImageURL } from '../../utils/storage';
 
@@ -46,7 +48,10 @@ const TodayPickItemImage = memo(({ itemId, category }: { itemId: string; categor
 TodayPickItemImage.displayName = 'TodayPickItemImage';
 
 export const TodaysPick = () => {
-  const { todaysPick, setTodaysPick } = useStore();
+  const { todaysPick, setTodaysPick, wardrobe } = useStore();
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  const canSwipe = meetsMinimumRequirements(wardrobe);
 
   const handleReSwipe = () => {
     setTodaysPick(null);
@@ -68,12 +73,38 @@ export const TodaysPick = () => {
             <p className="text-purple-200 mb-6">
               Swipe through outfits to pick today's look!
             </p>
-            <button
-              onClick={handleReSwipe}
-              className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
-            >
-              Start Swiping
-            </button>
+            {canSwipe ? (
+              <button
+                onClick={handleReSwipe}
+                className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                Start Swiping
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Upload Items
+                </button>
+
+                {showUploadModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 relative max-h-[90vh] overflow-auto">
+                      <button
+                        onClick={() => setShowUploadModal(false)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 dark:bg-gray-700"
+                        aria-label="Close upload"
+                      >
+                        ✕
+                      </button>
+                      <WardrobeUpload />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
