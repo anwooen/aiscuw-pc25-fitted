@@ -1,6 +1,7 @@
 import { memo, useState, useEffect } from 'react';
 import { Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
+import { Card3D } from '../shared/Card3D';
 
 interface OutfitCardProps {
   outfit: Outfit;
@@ -50,44 +51,48 @@ OutfitItemImage.displayName = 'OutfitItemImage';
 
 export const OutfitCard = memo(({ outfit }: OutfitCardProps) => {
   return (
-    <div className="w-full h-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-      <div className="h-full flex flex-col">
-        {/* Outfit Items Grid */}
-        <div className="flex-1 p-6 grid grid-cols-2 gap-4 overflow-y-auto">
-          {outfit.items.map((item) => (
-            <div key={item.id} className="relative group">
-              <OutfitItemImage itemId={item.id} category={item.category} />
-              <div className="mt-2 text-center">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
-                  {item.category}
-                </span>
-              </div>
+    <div className="w-full h-full">
+      <Card3D depth="deep" className="w-full h-full">
+        <div className="w-full h-full bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <div className="h-full flex flex-col">
+            {/* Outfit Items Grid */}
+            <div className="flex-1 p-6 grid grid-cols-2 gap-4 overflow-y-auto">
+              {outfit.items.map((item) => (
+                <div key={item.id} className="relative group">
+                  <OutfitItemImage itemId={item.id} category={item.category} />
+                  <div className="mt-2 text-center">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
+                      {item.category}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Outfit Info */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {outfit.items.length} items
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {outfit.items.slice(0, 3).map((item) =>
-                item.colors.slice(0, 2).map((color, idx) => (
-                  <div
-                    key={`${item.id}-${idx}`}
-                    className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"
-                    style={{ backgroundColor: color }}
-                  />
-                ))
-              )}
+            {/* Outfit Info */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {outfit.items.length} items
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {outfit.items.slice(0, 3).map((item) =>
+                    item.colors.slice(0, 2).map((color, idx) => (
+                      <div
+                        key={`${item.id}-${idx}`}
+                        className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Card3D>
     </div>
   );
 });

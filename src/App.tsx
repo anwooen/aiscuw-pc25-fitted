@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback, useRef } from 'react';
 import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
@@ -64,6 +64,7 @@ function App() {
       setOnboardingStep('complete');
     }
   }, [profile.hasCompletedOnboarding]);
+
 
   // Handle onboarding flow with useCallback for performance
   const handleGetStarted = useCallback(() => {

@@ -28,6 +28,20 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
 
   const currentOutfit = dailySuggestions[currentIndex];
 
+  // Generate fallback outfits if needed (MUST be at top level - Rules of Hooks!)
+  useEffect(() => {
+    if (!dailySuggestions.length && wardrobe.length > 0) {
+      try {
+        const generated = generateOutfits(wardrobe, profile, 10);
+        if (generated && generated.length > 0) {
+          setDailySuggestions(generated as Outfit[]);
+        }
+      } catch (err) {
+        console.error('Fallback outfit generation failed:', err);
+      }
+    }
+  }, [dailySuggestions.length, wardrobe, profile, setDailySuggestions]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -115,19 +129,6 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   };
 
   if (!dailySuggestions.length) {
-    // If there are no daily suggestions but we have wardrobe items, try to generate a fallback set
-    useEffect(() => {
-      if (wardrobe.length > 0) {
-        try {
-          const generated = generateOutfits(wardrobe, profile, 10);
-          if (generated && generated.length > 0) {
-            setDailySuggestions(generated as Outfit[]);
-          }
-        } catch (err) {
-          console.error('Fallback outfit generation failed:', err);
-        }
-      }
-    }, [wardrobe, profile, setDailySuggestions]);
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
