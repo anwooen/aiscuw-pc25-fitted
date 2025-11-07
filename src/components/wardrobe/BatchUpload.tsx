@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle, Sparkles } from 'lucide-react';
 import { useBatchAnalysis } from '../../hooks/useBatchAnalysis';
 import { Button } from '../shared/Button';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
@@ -123,15 +123,19 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
   }, [clear, onComplete]);
 
   /**
-   * Handle cancel
+   * Handle cancel - unified cancel logic
+   * - During processing (preprocessing/uploading): Stop and clear
+   * - When idle with queue: Clear queue and close
+   * - When idle without queue: Just close
    */
   const handleCancel = useCallback(() => {
-    if (status === 'processing') {
+    if (status === 'preprocessing' || status === 'uploading') {
+      // Stop processing first
       cancelUpload();
-    } else {
-      clear();
-      onCancel?.();
     }
+    // Always clear and close (whether we stopped processing or not)
+    clear();
+    onCancel?.();
   }, [status, cancelUpload, clear, onCancel]);
 
   // If upload is completed, show completion message
@@ -241,13 +245,34 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
                   className="w-full h-full object-cover"
                 />
 
+                {/* AI Confidence Badge (top-left) */}
+                {queuedFile.aiStatus === 'success' && queuedFile.aiConfidence !== undefined && (
+                  <div className={`absolute top-2 left-2 z-30 px-2 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                    queuedFile.aiConfidence >= 0.8
+                      ? 'bg-green-500 text-white'
+                      : queuedFile.aiConfidence >= 0.5
+                      ? 'bg-yellow-500 text-white'
+                      : 'bg-red-500 text-white'
+                  }`}>
+                    <Sparkles className="w-3 h-3" />
+                    <span className="text-xs font-semibold">{(queuedFile.aiConfidence * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+
                 {/* Category selector for each queued file (pre-analysis) */}
                 {(status === 'idle' || status === 'cancelled') && (
-                  <div className="absolute top-2 left-2 z-20 bg-white/90 dark:bg-gray-800/90 rounded-md p-1 shadow-sm">
+                  <div className="absolute bottom-2 left-2 right-2 z-20 bg-white/95 dark:bg-gray-800/95 rounded-md p-1.5 shadow-lg">
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400 mb-1 px-1">
+                      {queuedFile.aiStatus === 'success' && queuedFile.category
+                        ? '✨ AI suggested'
+                        : queuedFile.aiStatus === 'failed'
+                        ? '⚠️ AI failed - select manually'
+                        : 'Select category'}
+                    </div>
                     <select
                       value={queuedFile.category ?? ''}
                       onChange={(e) => updateQueueFileCategory(queuedFile.id, e.target.value ? (e.target.value as any) : null)}
-                      className="text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-uw-purple dark:hover:border-uw-purple transition-colors [&>option]:text-gray-900 dark:[&>option]:text-white [&>option]:bg-white dark:[&>option]:bg-gray-800"
+                      className="w-full text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-uw-purple dark:hover:border-uw-purple transition-colors [&>option]:text-gray-900 dark:[&>option]:text-white [&>option]:bg-white dark:[&>option]:bg-gray-800"
                       aria-label="Select category"
                     >
                       <option value="">Category</option>
@@ -304,7 +329,9 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
                 <div className="flex items-center gap-3 mb-2">
                   <RefreshCw className="w-5 h-5 animate-spin text-uw-purple" />
                   <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {status === 'uploading' ? 'Adding to wardrobe...' : 'Processing images...'} {processedCount} / {totalFiles} ({progress}%)
+                    {status === 'uploading'
+                      ? 'Saving to wardrobe...'
+                      : 'Analyzing with AI...'} {processedCount} / {totalFiles} ({progress}%)
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3">
@@ -334,41 +361,45 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
         {/* Action Buttons */}
         <div className="mt-6 flex gap-3">
           {status === 'idle' && queue.length > 0 && (
-            <button
-              onClick={handleStartUpload}
-              className="
-                flex-1 bg-uw-purple text-white px-6 py-3 rounded-lg
-                font-medium hover:bg-uw-purple/90 transition-colors
-              "
-            >
-              Upload to Wardrobe
-            </button>
+            <>
+              <button
+                onClick={handleStartUpload}
+                className="
+                  flex-1 bg-uw-purple text-white px-6 py-3 rounded-lg
+                  font-medium hover:bg-uw-purple/90 transition-colors
+                "
+              >
+                Upload to Wardrobe
+              </button>
+              <button
+                onClick={handleCancel}
+                className="
+                  px-6 py-3 rounded-lg font-medium
+                  border border-gray-300 dark:border-gray-700
+                  text-gray-700 dark:text-gray-300
+                  hover:bg-gray-100 dark:hover:bg-gray-800
+                  transition-colors
+                "
+              >
+                Clear Queue
+              </button>
+            </>
           )}
 
-          {(status === 'preprocessing' || status === 'uploading') && (
+          {status === 'idle' && queue.length === 0 && (
             <button
-              onClick={cancelUpload}
+              onClick={handleCancel}
               className="
-                flex-1 bg-amber-500 text-white px-6 py-3 rounded-lg
-                font-medium hover:bg-amber-600 transition-colors
+                flex-1 px-6 py-3 rounded-lg font-medium
+                border border-gray-300 dark:border-gray-700
+                text-gray-700 dark:text-gray-300
+                hover:bg-gray-100 dark:hover:bg-gray-800
+                transition-colors
               "
             >
-              Cancel Upload
+              Close
             </button>
           )}
-
-          <button
-            onClick={handleCancel}
-            className="
-              px-6 py-3 rounded-lg font-medium
-              border border-gray-300 dark:border-gray-700
-              text-gray-700 dark:text-gray-300
-              hover:bg-gray-100 dark:hover:bg-gray-800
-              transition-colors
-            "
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

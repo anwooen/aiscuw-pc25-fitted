@@ -170,13 +170,13 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
       const result = results.get(queuedFile.id);
 
       if (result && result.status === 'success') {
-        const category = queuedFile.category || result.analysis.suggestedCategory;
+        const category = queuedFile.category || result.analysis!.suggestedCategory;
         const clothingItem = {
           id: crypto.randomUUID(),
           image: queuedFile.preview, // Use preview image
           category: category,
-          colors: result.analysis.detectedColors,
-          style: result.analysis.suggestedStyles,
+          colors: result.analysis!.detectedColors,
+          style: result.analysis!.suggestedStyles,
           uploadedAt: new Date(),
           aiAnalysis: result.analysis,
         };
@@ -374,7 +374,7 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
                               </select>
                             ) : (
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {CATEGORY_LABELS[result.analysis.suggestedCategory]}
+                                {result.analysis!.suggestedCategory ? CATEGORY_LABELS[result.analysis!.suggestedCategory as ClothingCategory] : 'Unknown'}
                               </div>
                             )}
                           </div>
@@ -385,7 +385,7 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
                               Colors
                             </label>
                             <div className="flex flex-wrap gap-1">
-                              {result.analysis.detectedColors.slice(0, 4).map((color, idx) => (
+                              {result.analysis!.detectedColors.slice(0, 4).map((color: string, idx: number) => (
                                 <span
                                   key={idx}
                                   className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-900 dark:text-white"
@@ -402,7 +402,7 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
                               Season
                             </label>
                             <div className="text-sm text-gray-900 dark:text-white capitalize">
-                              {result.analysis.season}
+                              {result.analysis!.season}
                             </div>
                           </div>
 
@@ -412,18 +412,18 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
                               Formality
                             </label>
                             <div className="text-sm text-gray-900 dark:text-white capitalize">
-                              {result.analysis.formality}
+                              {result.analysis!.formality}
                             </div>
                           </div>
 
                           {/* Description */}
-                          {result.analysis.description && (
+                          {result.analysis!.description && (
                             <div className="md:col-span-2">
                               <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
                                 Description
                               </label>
                               <div className="text-sm text-gray-700 dark:text-gray-300">
-                                {result.analysis.description}
+                                {result.analysis!.description}
                               </div>
                             </div>
                           )}

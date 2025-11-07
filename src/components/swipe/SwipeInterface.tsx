@@ -13,7 +13,7 @@ interface SwipeInterfaceProps {
   onNavigate?: (view: 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings') => void;
 }
 
-export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
+export function SwipeInterface({ onNavigate: _onNavigate }: SwipeInterfaceProps) {
   const { dailySuggestions, setTodaysPick, addOutfit, setDailySuggestions } = useStore();
   const wardrobe = useStore((s) => s.wardrobe);
   const profile = useStore((s) => s.profile);

@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
-import { ClothingCategory } from '../types';
+import { ClothingCategory, AIClothingAnalysis } from '../types';
 import { convertImageIfNeeded } from '../utils/imageFormatConverter';
 import { processImageForAI } from '../utils/backgroundRemoval';
 import { compressImage, extractColors } from '../utils/imageCompression';
 import { saveImage } from '../utils/storage';
 import { useStore } from '../store/useStore';
+import { analyzeClothing } from '../services/api';
 
 export interface QueuedFile {
   id: string;
@@ -15,6 +16,19 @@ export interface QueuedFile {
   // If we've preprocessed the image (converted + background removed), keep it to avoid redoing work
   processedBlob?: Blob;
   processedBase64?: string;
+  // AI analysis fields (Phase 14)
+  aiAnalysis?: AIClothingAnalysis;
+  aiConfidence?: number;
+  aiStatus?: 'pending' | 'analyzing' | 'success' | 'failed';
+}
+
+// Legacy type for BatchAnalysisResults.tsx (not currently used)
+export interface AnalysisResult {
+  id: string;
+  status: 'success' | 'error';
+  analysis?: AIClothingAnalysis;
+  confidence?: number;
+  error?: string;
 }
 
 export type BatchStatus = 'idle' | 'preprocessing' | 'uploading' | 'completed' | 'cancelled';
@@ -113,7 +127,7 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
 
     const filesToProcess = files.slice(0, remaining);
     const queuedFiles: QueuedFile[] = [];
-    
+
     // Set state to preprocessing and update total files
     setState(prev => ({
       ...prev,
@@ -123,6 +137,9 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
       successCount: 0,
       errorCount: 0
     }));
+
+    // Get user profile for AI analysis
+    const profile = useStore.getState().profile;
 
     // Process each file sequentially and update progress
     for (let i = 0; i < filesToProcess.length; i++) {
@@ -144,6 +161,34 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
           reader.readAsDataURL(processedBlob);
         });
 
+        // Phase 14: Run AI analysis in parallel with preprocessing
+        let aiAnalysis: AIClothingAnalysis | undefined;
+        let aiConfidence: number | undefined;
+        let aiStatus: 'pending' | 'analyzing' | 'success' | 'failed' = 'pending';
+        let suggestedCategory: ClothingCategory | undefined;
+
+        try {
+          aiStatus = 'analyzing';
+          const aiResult = await analyzeClothing({
+            image: base64,
+            userPreferences: profile.stylePreferences,
+          });
+
+          if (aiResult.success && aiResult.analysis) {
+            aiAnalysis = aiResult.analysis;
+            aiConfidence = aiResult.analysis.confidence;
+            suggestedCategory = aiResult.analysis.suggestedCategory;
+            aiStatus = 'success';
+            console.log(`AI analysis success for ${file.name}: ${suggestedCategory} (${(aiConfidence! * 100).toFixed(0)}% confident)`);
+          } else {
+            aiStatus = 'failed';
+            console.warn(`AI analysis failed for ${file.name}:`, aiResult.error);
+          }
+        } catch (aiErr) {
+          aiStatus = 'failed';
+          console.error(`AI analysis error for ${file.name}:`, aiErr);
+        }
+
           // Add the successfully processed file to queue
           queuedFiles.push({
             id,
@@ -152,6 +197,11 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
             originalName: file.name,
             processedBlob,
             processedBase64: base64,
+            // AI fields
+            aiAnalysis,
+            aiConfidence,
+            aiStatus,
+            category: suggestedCategory, // Auto-fill category from AI!
           });
 
           // Update progress after successful processing
@@ -170,6 +220,7 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
               file,
               preview: fallbackPreview,
               originalName: file.name,
+              aiStatus: 'failed',
             });
           } catch (previewErr) {
             console.error(`Failed to create preview for ${file.name}:`, previewErr);
@@ -192,7 +243,7 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
         status: 'idle'
       };
     });
-  });
+  }, []);
 
   /**
    * Remove a file from the queue
