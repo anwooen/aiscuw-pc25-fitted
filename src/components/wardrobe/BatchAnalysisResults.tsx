@@ -170,10 +170,11 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
       const result = results.get(queuedFile.id);
 
       if (result && result.status === 'success') {
+        const category = queuedFile.category || result.analysis.suggestedCategory;
         const clothingItem = {
           id: crypto.randomUUID(),
           image: queuedFile.preview, // Use preview image
-          category: result.analysis.suggestedCategory,
+          category: category,
           colors: result.analysis.detectedColors,
           style: result.analysis.suggestedStyles,
           uploadedAt: new Date(),

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, Camera, X, Sparkles, RefreshCw, Layers, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { ClothingCategory, AIClothingAnalysis } from '../../types';
 import { compressImage, extractColors, isValidImage } from '../../utils/imageCompression';
@@ -14,7 +14,6 @@ import { BatchUpload } from './BatchUpload';
 export const WardrobeUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewLoaded, setPreviewLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,9 +79,8 @@ export const WardrobeUpload = () => {
       // Create preview
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64Image = reader.result as string;
-        setPreviewLoaded(false);
-        setPreviewUrl(base64Image);
+  const base64Image = reader.result as string;
+  setPreviewUrl(base64Image);
 
         // Do NOT hide uploading overlay here — wait until the image actually loads
         // Step 3: If AI is enabled, analyze the image (runs after preview is visible)
@@ -112,7 +110,7 @@ export const WardrobeUpload = () => {
       if (response.success && response.analysis) {
         setAiAnalysis(response.analysis);
         // Auto-select the suggested category (user can still override)
-        setSelectedCategory(response.analysis.suggestedCategory);
+    setSelectedCategory(response.analysis.suggestedCategory || null);
       } else {
         setError(response.error || 'Failed to analyze image with AI');
       }
@@ -139,6 +137,76 @@ export const WardrobeUpload = () => {
     cameraInputRef.current?.click();
   };
 
+  // Aggregate processing state for the initial upload area
+  const isProcessing = isConverting || backgroundRemoval.status === 'processing' || isAnalyzing || isUploading;
+
+  const statusMessage = isConverting
+    ? progress?.message || 'Converting image...'
+    : backgroundRemoval.status === 'processing'
+    ? backgroundRemoval.stage || 'Processing image...'
+    : isAnalyzing
+    ? 'Analyzing with AI...'
+    : isUploading
+    ? 'Uploading...'
+    : '';
+
+  const combinedProgress = (() => {
+    if (isUploading) return 95; // during final upload/save, show near-complete state
+    return Math.max(progress?.progress ?? 0, backgroundRemoval.progress ?? 0);
+  })();
+
+  // Smooth, non-decreasing displayed progress to avoid quick fill/reset behavior
+  const [displayedProgress, setDisplayedProgress] = useState(0);
+  const targetProgressRef = useRef<number>(combinedProgress);
+
+  useEffect(() => {
+    // Decide visible target: prefer combinedProgress, but when uploading ensure it moves toward 95
+    let target = combinedProgress;
+    if (isUploading && target < 95) target = 95;
+    targetProgressRef.current = target;
+
+    let rafId: number | null = null;
+
+    const step = () => {
+      setDisplayedProgress((prev) => {
+        // never decrease
+        const t = targetProgressRef.current;
+        if (prev >= t) return prev;
+        const diff = t - prev;
+        const inc = Math.max(1, Math.ceil(diff * 0.18)); // proportional smoothing
+        const next = Math.min(100, prev + inc);
+        return next;
+      });
+
+      // Continue animating until we reach target
+      if (displayedProgress < targetProgressRef.current) {
+        rafId = requestAnimationFrame(step);
+      }
+    };
+
+    // Kick off animation if displayed is behind target
+    if (displayedProgress < target) {
+      rafId = requestAnimationFrame(step);
+    }
+
+    // When processing stops, finalize to 100 briefly then reset to 0
+    if (!isProcessing && displayedProgress > 0) {
+      const finishTimeout = window.setTimeout(() => {
+        setDisplayedProgress(0);
+      }, 700);
+
+      return () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        clearTimeout(finishTimeout);
+      };
+    }
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combinedProgress, isUploading, isProcessing]);
+
   const handleCancel = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
@@ -146,7 +214,6 @@ export const WardrobeUpload = () => {
     setError(null);
     setAiAnalysis(null);
     setIsAnalyzing(false);
-    setPreviewLoaded(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
@@ -239,55 +306,48 @@ export const WardrobeUpload = () => {
 
       {!selectedFile ? (
         <div className="space-y-4">
-          {/* Upload buttons (or analyzing spinner) */}
-          <div className="grid grid-cols-2 gap-4">
-            {(isAnalyzing || isUploading || isConverting || backgroundRemoval.status === 'processing') ? (
-              <div className="col-span-2 flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-lg">
-                <LoadingSpinner size="md" />
-                <div className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {backgroundRemoval.status === 'processing'
-                    ? (backgroundRemoval.stage || 'Removing background...')
-                    : isConverting && progress
-                      ? (progress.message || 'Converting image...')
-                      : isUploading
-                        ? 'Uploading...'
-                        : 'Analyzing image...'}
-                </div>
-                {backgroundRemoval.status === 'processing' && (
-                  <div className="mt-3 w-full">
-                    <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
-                      <div
-                        className="bg-purple-600 dark:bg-purple-400 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${backgroundRemoval.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={handleUploadClick}
-                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
-                >
-                  <Upload className="w-12 h-12 text-gray-400 mb-2" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Upload Photo
-                  </span>
-                </button>
+          {/* Upload buttons (replaced by progress bar while processing) */}
+          {!isProcessing ? (
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={handleUploadClick}
+                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+              >
+                <Upload className="w-12 h-12 text-gray-400 mb-2" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Upload Photo
+                </span>
+              </button>
 
-                <button
-                  onClick={handleCameraClick}
-                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
-                >
-                  <Camera className="w-12 h-12 text-gray-400 mb-2" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Take Photo
-                  </span>
-                </button>
-              </>
-            )}
-          </div>
+              <button
+                onClick={handleCameraClick}
+                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+              >
+                <Camera className="w-12 h-12 text-gray-400 mb-2" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Take Photo
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-uw-purple" />
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{statusMessage}</div>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3">
+                  <div
+                    className="bg-uw-purple h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${displayedProgress}%` }}
+                  />
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleCancel} className="min-w-[96px]">
+                Cancel
+              </Button>
+            </div>
+          )}
 
           {/* Hidden file inputs */}
           <input
@@ -316,11 +376,9 @@ export const WardrobeUpload = () => {
                 alt="Preview"
                 className="w-full h-full object-cover"
                 onLoad={() => {
-                  setPreviewLoaded(true);
                   setIsUploading(false);
                 }}
                 onError={() => {
-                  setPreviewLoaded(false);
                   setIsUploading(false);
                   setError('Failed to load preview image.');
                 }}

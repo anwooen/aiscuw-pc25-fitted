@@ -1,22 +1,20 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
-import type { FC } from 'react';
 import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
-import { useAIOutfitRecommendations } from './hooks/useAIOutfitRecommendations';
-import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, Moon, Sun, Bot, Zap } from 'lucide-react';
-import { MINIMUM_WARDROBE } from './types';
+import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, Moon, Sun, RotateCcw } from 'lucide-react';
+import { MINIMUM_WARDROBE, UserProfile } from './types';
 
 // Lazy load components for code splitting
-const Welcome = lazy<FC<{ onGetStarted: () => void }>>(() => import('./components/onboarding/Welcome').then(m => ({ default: m.Welcome })));
-const FashionQuestionnaire = lazy<FC<{ onComplete: (data: { stylePreferences: Record<string, number>; favoriteColors: string[] }) => void; onBack: () => void }>>(() => import('./components/onboarding/FashionQuestionnaire').then(m => ({ default: m.FashionQuestionnaire })));
+const Welcome = lazy(() => import('./components/onboarding/Welcome').then(m => ({ default: m.Welcome })));
+// Use the redesigned questionnaire by default (exports a default component)
+const FashionQuestionnaire = lazy(() => import('./components/onboarding/FashionQuestionnaireNew'));
 const WardrobeUpload = lazy(() => import('./components/wardrobe/WardrobeUpload').then(m => ({ default: m.WardrobeUpload })));
 const WardrobeGrid = lazy(() => import('./components/wardrobe/WardrobeGrid').then(m => ({ default: m.WardrobeGrid })));
 const SwipeInterface = lazy(() => import('./components/swipe/SwipeInterface').then(m => ({ default: m.SwipeInterface })));
 const TodaysPick = lazy(() => import('./components/profile/TodaysPick').then(m => ({ default: m.TodaysPick })));
 const OutfitHistory = lazy(() => import('./components/profile/OutfitHistory').then(m => ({ default: m.OutfitHistory })));
 const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings').then(m => ({ default: m.ProfileSettings })));
-const WeatherWidget = lazy(() => import('./components/shared/WeatherWidget').then(m => ({ default: m.WeatherWidget })));
 
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
 type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings';
@@ -34,18 +32,11 @@ const LoadingFallback = () => (
 );
 
 function App() {
-  const { profile, completeOnboarding, setDailySuggestions, theme, toggleTheme, removeDuplicateOutfits } = useStore();
+  const { profile, completeOnboardingEnhanced, setDailySuggestions, theme, toggleTheme, removeDuplicateOutfits, resetOnboarding } = useStore();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
   const [currentView, setCurrentView] = useState<AppView>('wardrobe');
-  const [useAIMode, setUseAIMode] = useState(false); // Toggle between AI and classic mode
   const wardrobeStats = useWardrobe();
-
-  // Use AI or classic outfit generator based on mode
-  const classicOutfits = useOutfitGenerator(10);
-  const aiOutfits = useAIOutfitRecommendations({ useAI: useAIMode, count: 10 });
-
-  // Select the active outfit generator
-  const { outfits, loading, weather, error } = useAIMode ? aiOutfits : { ...classicOutfits, weather: null, error: null };
+  const { outfits, loading } = useOutfitGenerator(10);
 
   // Clean up duplicate outfits on mount
   useEffect(() => {
@@ -77,16 +68,16 @@ function App() {
 
   // Handle onboarding flow with useCallback for performance
   const handleGetStarted = useCallback(() => {
+    // Prefetch the questionnaire bundle to avoid a blank/flicker when switching steps
+    void import('./components/onboarding/FashionQuestionnaireNew');
     setOnboardingStep('questionnaire');
   }, []);
 
-  const handleQuestionnaireComplete = useCallback((data: {
-    stylePreferences: Record<string, number>;
-    favoriteColors: string[];
-  }) => {
-    completeOnboarding(data.stylePreferences as any, data.favoriteColors);
+  // Phase 13: Enhanced questionnaire completion handler
+  const handleQuestionnaireCompleteEnhanced = useCallback((data: Partial<UserProfile>) => {
+    completeOnboardingEnhanced(data);
     setOnboardingStep('complete');
-  }, [completeOnboarding]);
+  }, [completeOnboardingEnhanced]);
 
   const handleQuestionnaireBack = useCallback(() => {
     setOnboardingStep('welcome');
@@ -106,7 +97,7 @@ function App() {
       return (
         <Suspense fallback={<LoadingFallback />}>
           <FashionQuestionnaire
-            onComplete={handleQuestionnaireComplete}
+            onComplete={handleQuestionnaireCompleteEnhanced}
             onBack={handleQuestionnaireBack}
           />
         </Suspense>
@@ -168,7 +159,7 @@ function App() {
               ? 'text-uw-purple'
               : wardrobeStats.canSwipe
               ? 'text-gray-500 hover:text-uw-purple'
-              : 'text-gray-300 cursor-t-allowed'
+              : 'text-gray-300 cursor-not-allowed'
           }`}
         >
           <Home className="w-6 h-6 mb-1" />
@@ -228,9 +219,49 @@ function App() {
   if (currentView === 'settings') {
     return (
       <>
-        <Suspense fallback={<LoadingFallback />}>
-          <ProfileSettings />
-        </Suspense>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
+          {/* Header */}
+          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div className="container mx-auto px-4 py-4">
+              <h1 className="text-2xl font-bold text-uw-purple dark:text-purple-400">Settings</h1>
+            </div>
+          </header>
+          
+          <div className="container mx-auto px-4 py-8 max-w-2xl">
+            {/* Reset Onboarding Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                  <RotateCcw className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Reset Onboarding
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Clear your onboarding status to see the Welcome screen and questionnaire again. Your wardrobe data will be preserved.
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to reset onboarding? You will see the Welcome screen again.')) {
+                        resetOnboarding();
+                        window.location.reload();
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset Onboarding
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <Suspense fallback={<LoadingFallback />}>
+              <ProfileSettings />
+            </Suspense>
+          </div>
+        </div>
         <BottomNav />
       </>
     );
@@ -244,55 +275,16 @@ function App() {
           {/* Header */}
           <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div className="container mx-auto px-4 py-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-center">
                 <h1 className="text-2xl font-bold text-uw-purple dark:text-purple-400">Today's Picks</h1>
-
-                {/* AI Mode Toggle */}
-                <button
-                  onClick={() => setUseAIMode(!useAIMode)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    useAIMode
-                      ? 'bg-uw-purple text-white shadow-lg'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  title={useAIMode ? 'Using AI Recommendations' : 'Using Classic Algorithm'}
-                >
-                  {useAIMode ? (
-                    <>
-                      <Bot className="w-5 h-5" />
-                      <span className="text-sm">AI Mode</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-5 h-5" />
-                      <span className="text-sm">Classic</span>
-                    </>
-                  )}
-                </button>
               </div>
-
-              {/* Weather Widget (only show in AI mode) */}
-              {useAIMode && (
-                <div className="mt-3">
-                  <Suspense fallback={<div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />}>
-                    <WeatherWidget weather={weather} loading={loading} />
-                  </Suspense>
-                </div>
-              )}
-
-              {/* Error Message */}
-              {error && (
-                <div className="mt-3 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">{error}</p>
-                </div>
-              )}
             </div>
           </header>
 
           {/* Swipe Interface */}
           <div className="h-[calc(100vh-140px)]">
             <Suspense fallback={<LoadingFallback />}>
-              <SwipeInterface onNavigate={setCurrentView} />
+              <SwipeInterface />
             </Suspense>
           </div>
         </div>

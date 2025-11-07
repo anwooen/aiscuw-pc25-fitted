@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppState, ClothingItem, Outfit, UserProfile, StylePreference } from '../types';
+import { applyPhase13Defaults } from '../utils/profileDefaults';
 
 const initialProfile: UserProfile = {
   hasCompletedOnboarding: false,
@@ -37,15 +38,49 @@ export const useStore = create<AppState>()(
           },
         })),
 
+      // Phase 13: Enhanced onboarding completion with full profile
+      completeOnboardingEnhanced: (profileData: Partial<UserProfile>) =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            ...profileData,
+            hasCompletedOnboarding: true,
+            completedAt: new Date(),
+          },
+        })),
+
       addClothingItem: (item: ClothingItem) =>
         set((state) => ({
           wardrobe: [...state.wardrobe, item],
         })),
 
       removeClothingItem: (id: string) =>
-        set((state) => ({
-          wardrobe: state.wardrobe.filter((item) => item.id !== id),
-        })),
+        set((state) => {
+          // Remove the item from the wardrobe
+          const newWardrobe = state.wardrobe.filter((item) => item.id !== id);
+
+          // Remove any outfits that reference this item
+          const newOutfitHistory = state.outfitHistory.filter(outfit =>
+            !outfit.items.some(item => item.id === id)
+          );
+
+          // Clear todaysPick if it references the removed item
+          const newTodaysPick = state.todaysPick && state.todaysPick.items.some(i => i.id === id)
+            ? null
+            : state.todaysPick;
+
+          // Remove any daily suggestions that include the item
+          const newDailySuggestions = state.dailySuggestions.filter(outfit =>
+            !outfit.items.some(item => item.id === id)
+          );
+
+          return {
+            wardrobe: newWardrobe,
+            outfitHistory: newOutfitHistory,
+            todaysPick: newTodaysPick,
+            dailySuggestions: newDailySuggestions,
+          } as Partial<typeof state> as any;
+        }),
 
       addOutfit: (outfit: Outfit) =>
         set((state) => {
@@ -110,9 +145,25 @@ export const useStore = create<AppState>()(
             outfitHistory: uniqueOutfits,
           };
         }),
+
+      resetOnboarding: () =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            hasCompletedOnboarding: false,
+            completedAt: undefined,
+          },
+        })),
     }),
     {
       name: 'fitted-storage', // localStorage key
+      // Phase 13: Migrate existing profiles to include new fields
+      onRehydrateStorage: () => (state) => {
+        if (state?.profile) {
+          // Apply Phase 13 defaults to existing profiles
+          state.profile = applyPhase13Defaults(state.profile);
+        }
+      },
     }
   )
 );

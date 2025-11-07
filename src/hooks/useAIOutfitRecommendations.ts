@@ -193,13 +193,14 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
         aiAnalysis: item.aiAnalysis,
       }));
 
-      // Build AI request
+      // Build AI request (Phase 13: include full profile for enhanced personalization)
       const request: RecommendOutfitsRequest = {
         wardrobe: wardrobeData,
         weather: weatherData || undefined,
         preferences: profile.stylePreferences,
         favoriteColors: profile.favoriteColors,
         count,
+        profile, // Phase 13: Send full profile with all enhanced personalization data
       };
 
       // Call AI API

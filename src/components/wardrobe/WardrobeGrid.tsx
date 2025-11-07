@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo } from 'react';
 import { Filter } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ClothingItem } from './ClothingItem';
-import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { deleteImage } from '../../utils/storage';
 import type { ClothingCategory } from '../../types';
 
@@ -19,15 +18,14 @@ export const WardrobeGrid = () => {
   const { wardrobe, removeClothingItem } = useStore();
   const [selectedFilter, setSelectedFilter] = useState<ClothingCategory | 'all'>('all');
 
-  const handleDelete = useCallback(async (id: string) => {
-    try {
-      // Delete from IndexedDB
-      await deleteImage(id);
-      // Remove from store
-      removeClothingItem(id);
-    } catch (error) {
-      console.error('Failed to delete item:', error);
-    }
+  const handleDelete = useCallback((id: string) => {
+    // Remove from store immediately for instant UI feedback
+    removeClothingItem(id);
+
+    // Delete from IndexedDB asynchronously; do not block the UI.
+    deleteImage(id).catch((error) => {
+      console.error('Failed to delete image from storage:', error);
+    });
   }, [removeClothingItem]);
 
   const filteredWardrobe = useMemo(() =>
@@ -94,18 +92,16 @@ export const WardrobeGrid = () => {
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12">
-          <div className="text-center">
-            {/* Loading Spinner */}
-            <LoadingSpinner size="lg" className="mb-6" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              {selectedFilter === 'all' ? 'No items yet' : `No ${selectedFilter}s yet`}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {selectedFilter === 'all'
-                ? 'Start building your wardrobe by adding your first item above'
-                : `Add some ${selectedFilter}s to your wardrobe`}
-            </p>
-          </div>
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {selectedFilter === 'all' ? 'No items yet' : `No ${selectedFilter}s yet`}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {selectedFilter === 'all'
+                  ? 'Start building your wardrobe by adding your first item above'
+                  : `Add some ${selectedFilter}s to your wardrobe`}
+              </p>
+            </div>
         </div>
       )}
     </div>

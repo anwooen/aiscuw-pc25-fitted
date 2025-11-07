@@ -1,6 +1,6 @@
 import { memo, useState, useEffect } from 'react';
 import { Outfit } from '../../types';
-import { getImageURL } from '../../utils/storage';
+import { getImageURL, cleanupImageURL } from '../../utils/storage';
 
 interface OutfitCardProps {
   outfit: Outfit;
@@ -9,37 +9,59 @@ interface OutfitCardProps {
 // Image component that loads from IndexedDB
 const OutfitItemImage = memo(({ itemId, category }: { itemId: string; category: string }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     const loadImage = async () => {
       try {
+        setLoadError(false);
+        // Try both itemId and image property for backward compatibility
         const url = await getImageURL(itemId);
-        setImageUrl(url);
+        if (mounted && url) {
+          setImageUrl(url);
+          console.log('Loaded image:', itemId); // Debug log
+        } else {
+          console.warn('No image URL for:', itemId); // Debug log
+        }
       } catch (error) {
         console.error('Failed to load image:', error);
+        if (mounted) {
+          setLoadError(true);
+        }
       }
     };
     loadImage();
 
-    // Cleanup: revoke object URL when component unmounts
+    // Cleanup when component unmounts or itemId changes
     return () => {
+      mounted = false;
       if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
+        cleanupImageURL(itemId);
       }
     };
   }, [itemId]);
 
   return (
     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-      {imageUrl ? (
+      {imageUrl && !loadError ? (
         <img
           src={imageUrl}
           alt={category}
           className="w-full h-full object-cover"
+          onError={() => setLoadError(true)}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <div className="animate-pulse bg-gray-200 dark:bg-gray-600 w-full h-full" />
+          {loadError ? (
+            <div className="text-center p-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Failed to load image
+              </span>
+            </div>
+          ) : (
+            <div className="animate-pulse bg-gray-200 dark:bg-gray-600 w-full h-full" />
+          )}
         </div>
       )}
     </div>

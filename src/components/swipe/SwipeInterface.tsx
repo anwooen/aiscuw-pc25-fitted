@@ -5,7 +5,7 @@ import { useStore } from '../../store/useStore';
 import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
 import { SwipeControls } from './SwipeControls';
-import { Button } from '../shared/Button';
+import { generateOutfits } from '../../utils/outfitGenerator';
 
 const SWIPE_THRESHOLD = 100;
 
@@ -14,7 +14,9 @@ interface SwipeInterfaceProps {
 }
 
 export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
-  const { dailySuggestions, setTodaysPick, addOutfit } = useStore();
+  const { dailySuggestions, setTodaysPick, addOutfit, setDailySuggestions } = useStore();
+  const wardrobe = useStore((s) => s.wardrobe);
+  const profile = useStore((s) => s.profile);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
@@ -112,6 +114,19 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   };
 
   if (!dailySuggestions.length) {
+    // If there are no daily suggestions but we have wardrobe items, try to generate a fallback set
+    useEffect(() => {
+      if (wardrobe.length > 0) {
+        try {
+          const generated = generateOutfits(wardrobe, profile, 10);
+          if (generated && generated.length > 0) {
+            setDailySuggestions(generated as Outfit[]);
+          }
+        } catch (err) {
+          console.error('Fallback outfit generation failed:', err);
+        }
+      }
+    }, [wardrobe, profile, setDailySuggestions]);
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
@@ -122,31 +137,31 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   }
 
   if (currentIndex >= dailySuggestions.length) {
+    // Generate new outfits when reaching the end
+    useEffect(() => {
+      if (wardrobe.length > 0) {
+        try {
+          const generated = generateOutfits(wardrobe, profile, 10);
+          if (generated && generated.length > 0) {
+            setDailySuggestions(generated);
+            setCurrentIndex(0); // Reset to first outfit
+          }
+        } catch (err) {
+          console.error('New outfit generation failed:', err);
+        }
+      }
+    }, [currentIndex]);
+
+    // Show loading state while generating new outfits
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
-        <Sparkles className="w-16 h-16 text-uw-purple mb-4" />
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-uw-purple mb-4"></div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          All Done!
+          Generating New Outfits
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
-          You've reviewed all of today's outfit suggestions.
+        <p className="text-gray-500 dark:text-gray-400">
+          Creating more fashion combinations for you...
         </p>
-
-        {/* Navigation buttons */}
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentIndex(0)}
-          >
-            Review Again
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => onNavigate?.('todaysPick')}
-          >
-            View Today's Pick
-          </Button>
-        </div>
       </div>
     );
   }
@@ -196,7 +211,6 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
             opacity,
           }}
           drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
           onDragEnd={handleDragEnd}
           animate={
             direction === 'right'
