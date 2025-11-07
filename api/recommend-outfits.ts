@@ -1,4 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { RecommendOutfitsRequest, RecommendOutfitsResponse, ClothingItem, StylePreference } from '../src/types';
 import OpenAI from 'openai';
 
 // Initialize OpenAI client
@@ -13,21 +14,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { wardrobe, weather, preferences, favoriteColors, count = 7, profile } = req.body;
+    const request = req.body as RecommendOutfitsRequest;
+    const { wardrobe, weather, preferences, favoriteColors, count = 7, profile } = request;
 
     // Validate input
     if (!wardrobe || !Array.isArray(wardrobe) || wardrobe.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'Invalid wardrobe data. Expected non-empty array.'
-      });
+      } as RecommendOutfitsResponse);
     }
 
     if (!preferences) {
       return res.status(400).json({
         success: false,
         error: 'User preferences are required.'
-      });
+      } as RecommendOutfitsResponse);
     }
 
     // Build wardrobe description for AI (text-only, no images!)
@@ -66,8 +68,8 @@ ${item.aiAnalysis?.formality ? `Formality: ${item.aiAnalysis.formality}` : ''}`;
         // Occasions
         if (profile.occasions) {
           const topOccasions = Object.entries(profile.occasions)
-            .filter(([, score]) => score >= 6)
-            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .filter(([, score]: [string, number]) => score >= 6)
+            .sort(([, a], [, b]) => b - a)
             .map(([occasion, score]) => `${occasion.charAt(0).toUpperCase() + occasion.slice(1)} (${score}/10)`);
 
           if (topOccasions.length > 0) {
@@ -139,12 +141,12 @@ ${item.aiAnalysis?.formality ? `Formality: ${item.aiAnalysis.formality}` : ''}`;
         // Pattern preferences
         if (profile.patternPreferences) {
           const topPatterns = Object.entries(profile.patternPreferences)
-            .filter(([, score]) => score >= 7)
-            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .filter(([, score]: [string, number]) => score >= 7)
+            .sort(([, a], [, b]) => b - a)
             .map(([pattern]) => pattern);
 
           const lowPatterns = Object.entries(profile.patternPreferences)
-            .filter(([, score]) => score <= 3)
+            .filter(([, score]: [string, number]) => score <= 3)
             .map(([pattern]) => pattern);
 
           if (topPatterns.length > 0) {
@@ -159,7 +161,7 @@ ${item.aiAnalysis?.formality ? `Formality: ${item.aiAnalysis.formality}` : ''}`;
         // Fashion goals & inspirations
         if (profile.fashionGoals && profile.fashionGoals.length > 0) {
           context += `Fashion Goals:\n`;
-          profile.fashionGoals.forEach(goal => {
+          profile.fashionGoals.forEach((goal: string) => {
             context += `- "${goal}"\n`;
           });
           context += `\n`;

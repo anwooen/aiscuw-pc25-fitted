@@ -1,7 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle, Sparkles } from 'lucide-react';
 import { useBatchAnalysis } from '../../hooks/useBatchAnalysis';
-import { BatchAnalysisResults } from './BatchAnalysisResults';
+import { Button } from '../shared/Button';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 
 interface BatchUploadProps {
   onComplete?: () => void;
@@ -26,7 +27,6 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
 
   const {
     queue,
-    results,
     status,
     progress,
     totalFiles,
@@ -35,12 +35,10 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
     errorCount,
     addFiles,
     removeFile,
-    startAnalysis,
-    pauseAnalysis,
-    cancelAnalysis,
-    retryFailed,
+    startUpload,
+    cancelUpload,
     clear,
-    updateResult,
+    updateQueueFileCategory,
   } = useBatchAnalysis();
 
   /**
@@ -100,14 +98,21 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
   /**
    * Handle start analysis
    */
-  const handleStartAnalysis = useCallback(() => {
+  const handleStartUpload = useCallback(() => {
     if (queue.length === 0) {
       alert('Please add files first');
       return;
     }
 
-    startAnalysis();
-  }, [queue.length, startAnalysis]);
+    // Check that all files have categories selected
+    const uncategorized = queue.filter(f => !f.category);
+    if (uncategorized.length > 0) {
+      alert('Please select a category for all items before uploading');
+      return;
+    }
+
+    startUpload();
+  }, [queue, startUpload]);
 
   /**
    * Handle complete and close
@@ -118,27 +123,39 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
   }, [clear, onComplete]);
 
   /**
-   * Handle cancel
+   * Handle cancel - unified cancel logic
+   * - During processing (preprocessing/uploading): Stop and clear
+   * - When idle with queue: Clear queue and close
+   * - When idle without queue: Just close
    */
   const handleCancel = useCallback(() => {
-    if (status === 'processing') {
-      cancelAnalysis();
-    } else {
-      clear();
-      onCancel?.();
+    if (status === 'preprocessing' || status === 'uploading') {
+      // Stop processing first
+      cancelUpload();
     }
-  }, [status, cancelAnalysis, clear, onCancel]);
+    // Always clear and close (whether we stopped processing or not)
+    clear();
+    onCancel?.();
+  }, [status, cancelUpload, clear, onCancel]);
 
-  // If analysis is completed, show results
-  if (status === 'completed' || (status === 'paused' && processedCount > 0)) {
+  // If upload is completed, show completion message
+  if (status === 'completed') {
     return (
-      <BatchAnalysisResults
-        results={results}
-        queue={queue}
-        onComplete={handleComplete}
-        onRetry={retryFailed}
-        onUpdateResult={updateResult}
-      />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+            <h2 className="text-2xl font-bold mb-4">Upload Complete!</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Successfully added {successCount} items to your wardrobe.
+              {errorCount > 0 && ` (${errorCount} failed)`}
+            </p>
+            <Button onClick={handleComplete}>
+              Return to Wardrobe
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -228,6 +245,46 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
                   className="w-full h-full object-cover"
                 />
 
+                {/* AI Confidence Badge (top-left) */}
+                {queuedFile.aiStatus === 'success' && queuedFile.aiConfidence !== undefined && (
+                  <div className={`absolute top-2 left-2 z-30 px-2 py-1 rounded-full shadow-sm flex items-center gap-1 ${
+                    queuedFile.aiConfidence >= 0.8
+                      ? 'bg-green-500 text-white'
+                      : queuedFile.aiConfidence >= 0.5
+                      ? 'bg-yellow-500 text-white'
+                      : 'bg-red-500 text-white'
+                  }`}>
+                    <Sparkles className="w-3 h-3" />
+                    <span className="text-xs font-semibold">{(queuedFile.aiConfidence * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+
+                {/* Category selector for each queued file (pre-analysis) */}
+                {(status === 'idle' || status === 'cancelled') && (
+                  <div className="absolute bottom-2 left-2 right-2 z-20 bg-white/95 dark:bg-gray-800/95 rounded-md p-1.5 shadow-lg">
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400 mb-1 px-1">
+                      {queuedFile.aiStatus === 'success' && queuedFile.category
+                        ? '✨ AI suggested'
+                        : queuedFile.aiStatus === 'failed'
+                        ? '⚠️ AI failed - select manually'
+                        : 'Select category'}
+                    </div>
+                    <select
+                      value={queuedFile.category ?? ''}
+                      onChange={(e) => updateQueueFileCategory(queuedFile.id, e.target.value ? (e.target.value as any) : null)}
+                      className="w-full text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-uw-purple dark:hover:border-uw-purple transition-colors [&>option]:text-gray-900 dark:[&>option]:text-white [&>option]:bg-white dark:[&>option]:bg-gray-800"
+                      aria-label="Select category"
+                    >
+                      <option value="">Category</option>
+                      <option value="top">Top</option>
+                      <option value="bottom">Bottom</option>
+                      <option value="shoes">Shoes</option>
+                      <option value="outerwear">Outerwear</option>
+                      <option value="accessory">Accessory</option>
+                    </select>
+                  </div>
+                )}
+
                 {/* Remove Button */}
                 {(status === 'idle' || status === 'cancelled') && (
                   <button
@@ -244,10 +301,13 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
                 )}
 
                 {/* Processing Status */}
-                {status === 'processing' && results.has(queuedFile.id) && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="text-white text-sm font-medium">
-                      {results.get(queuedFile.id)?.status === 'success' ? '✓' : '✗'}
+                {(status === 'preprocessing' || status === 'uploading') && (
+                  <div className="absolute inset-0 bg-black/40 dark:bg-black/40 flex items-center justify-center z-40">
+                    <div className="text-center px-4">
+                      <LoadingSpinner size="sm" />
+                      <div className="mt-3 text-white font-semibold">
+                        {status === 'uploading' ? 'Adding to wardrobe...' : 'Preprocessing...'}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -262,21 +322,28 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
         )}
 
         {/* Progress Bar */}
-        {status === 'processing' && (
+        {(status === 'preprocessing' || status === 'uploading') && (
           <div className="mt-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                Analyzing images...
-              </span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {processedCount} / {totalFiles} ({progress}%)
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-uw-purple h-full transition-all duration-300 rounded-full"
-                style={{ width: `${progress}%` }}
-              />
+            <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-uw-purple" />
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {status === 'uploading'
+                      ? 'Saving to wardrobe...'
+                      : 'Analyzing with AI...'} {processedCount} / {totalFiles} ({progress}%)
+                  </div>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3">
+                  <div
+                    className="bg-uw-purple h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleCancel} className="min-w-[96px]">
+                Cancel
+              </Button>
             </div>
             <div className="mt-2 flex items-center gap-4 text-sm">
               <span className="text-green-600 dark:text-green-500">
@@ -294,53 +361,45 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
         {/* Action Buttons */}
         <div className="mt-6 flex gap-3">
           {status === 'idle' && queue.length > 0 && (
-            <button
-              onClick={handleStartAnalysis}
-              className="
-                flex-1 bg-uw-purple text-white px-6 py-3 rounded-lg
-                font-medium hover:bg-uw-purple/90 transition-colors
-              "
-            >
-              Start Analysis
-            </button>
+            <>
+              <button
+                onClick={handleStartUpload}
+                className="
+                  flex-1 bg-uw-purple text-white px-6 py-3 rounded-lg
+                  font-medium hover:bg-uw-purple/90 transition-colors
+                "
+              >
+                Upload to Wardrobe
+              </button>
+              <button
+                onClick={handleCancel}
+                className="
+                  px-6 py-3 rounded-lg font-medium
+                  border border-gray-300 dark:border-gray-700
+                  text-gray-700 dark:text-gray-300
+                  hover:bg-gray-100 dark:hover:bg-gray-800
+                  transition-colors
+                "
+              >
+                Clear Queue
+              </button>
+            </>
           )}
 
-          {status === 'processing' && (
+          {status === 'idle' && queue.length === 0 && (
             <button
-              onClick={pauseAnalysis}
+              onClick={handleCancel}
               className="
-                flex-1 bg-amber-500 text-white px-6 py-3 rounded-lg
-                font-medium hover:bg-amber-600 transition-colors
+                flex-1 px-6 py-3 rounded-lg font-medium
+                border border-gray-300 dark:border-gray-700
+                text-gray-700 dark:text-gray-300
+                hover:bg-gray-100 dark:hover:bg-gray-800
+                transition-colors
               "
             >
-              Pause
+              Close
             </button>
           )}
-
-          {status === 'paused' && (
-            <button
-              onClick={startAnalysis}
-              className="
-                flex-1 bg-uw-purple text-white px-6 py-3 rounded-lg
-                font-medium hover:bg-uw-purple/90 transition-colors
-              "
-            >
-              Resume
-            </button>
-          )}
-
-          <button
-            onClick={handleCancel}
-            className="
-              px-6 py-3 rounded-lg font-medium
-              border border-gray-300 dark:border-gray-700
-              text-gray-700 dark:text-gray-300
-              hover:bg-gray-100 dark:hover:bg-gray-800
-              transition-colors
-            "
-          >
-            {status === 'processing' ? 'Cancel' : 'Close'}
-          </button>
         </div>
       </div>
     </div>

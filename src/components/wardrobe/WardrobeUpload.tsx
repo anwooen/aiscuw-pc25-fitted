@@ -5,6 +5,7 @@ import { compressImage, extractColors, isValidImage } from '../../utils/imageCom
 import { saveImage } from '../../utils/storage';
 import { useStore } from '../../store/useStore';
 import { Button } from '../shared/Button';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { analyzeClothing } from '../../services/api';
 import { useImageConverter } from '../../hooks/useImageConverter';
 import { useBackgroundRemoval } from '../../hooks/useBackgroundRemoval';
@@ -44,7 +45,10 @@ export const WardrobeUpload = () => {
       return;
     }
 
-    // Step 1: Format conversion (if needed)
+  // Show uploading/processing overlay while converting/background removal/preview is created
+  setIsUploading(true);
+
+  // Step 1: Format conversion (if needed)
     const needsConversion = checkIfNeedsConversion(file);
     let processedFile = file;
 
@@ -57,6 +61,7 @@ export const WardrobeUpload = () => {
 
       if (!converted) {
         setError(conversionError || 'Failed to convert image format. Please try a different image.');
+        setIsUploading(false);
         return;
       }
 
@@ -65,23 +70,31 @@ export const WardrobeUpload = () => {
     }
 
     // Step 2: Background removal (ALWAYS RUNS - Phase 11B)
-    console.log('Phase 11B: Starting automatic background removal...');
-    const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
+    try {
+      console.log('Phase 11B: Starting automatic background removal...');
+      const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
 
-    setSelectedFile(backgroundRemovedFile);
+      setSelectedFile(backgroundRemovedFile);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Image = reader.result as string;
-      setPreviewUrl(base64Image);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+  const base64Image = reader.result as string;
+  setPreviewUrl(base64Image);
 
-      // Step 3: If AI is enabled, analyze the image
-      if (useAI) {
-        await handleAIAnalysis(base64Image);
-      }
-    };
-    reader.readAsDataURL(backgroundRemovedFile);
+        // Do NOT hide uploading overlay here — wait until the image actually loads
+        // Step 3: If AI is enabled, analyze the image (runs after preview is visible)
+        if (useAI) {
+          await handleAIAnalysis(base64Image);
+        }
+      };
+      reader.readAsDataURL(backgroundRemovedFile);
+    } catch (err) {
+      console.error('Background removal error:', err);
+      setError('Failed to process image. Please try another photo.');
+      setIsUploading(false);
+      return;
+    }
   };
 
   const handleAIAnalysis = async (base64Image: string) => {
@@ -362,7 +375,43 @@ export const WardrobeUpload = () => {
                 src={previewUrl}
                 alt="Preview"
                 className="w-full h-full object-cover"
+                onLoad={() => {
+                  setIsUploading(false);
+                }}
+                onError={() => {
+                  setIsUploading(false);
+                  setError('Failed to load preview image.');
+                }}
               />
+            )}
+            {/* Uploading/processing overlay */}
+            {isUploading && (
+              <div className="absolute inset-0 bg-black/40 dark:bg-black/40 flex items-center justify-center z-40">
+                <div className="text-center px-4">
+                  <LoadingSpinner size="md" />
+                  <div className="mt-3 text-white font-semibold">
+                    {backgroundRemoval.status === 'processing'
+                      ? (backgroundRemoval.stage || 'Removing background...')
+                      : isConverting && progress
+                        ? (progress.message || 'Converting image...')
+                        : isUploading
+                          ? 'Uploading...'
+                          : isAnalyzing
+                            ? 'Analyzing image...'
+                            : 'Processing...'}
+                  </div>
+                  {backgroundRemoval.status === 'processing' && (
+                    <div className="mt-3 w-full">
+                      <div className="w-full bg-purple-300 dark:bg-purple-800 rounded-full h-2">
+                        <div
+                          className="bg-white/60 dark:bg-white/30 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${backgroundRemoval.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
             <button
               onClick={handleCancel}

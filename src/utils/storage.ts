@@ -51,11 +51,31 @@ export const deleteImage = async (id: string): Promise<void> => {
   await db.delete('images', id);
 };
 
-// Get image as base64 URL
+// URL cache to prevent creating duplicate object URLs
+const urlCache = new Map<string, string>();
+
+// Get image as object URL
 export const getImageURL = async (id: string): Promise<string | null> => {
+  // Check cache first
+  if (urlCache.has(id)) {
+    return urlCache.get(id) || null;
+  }
+
   const blob = await getImage(id);
   if (!blob) return null;
-  return URL.createObjectURL(blob);
+
+  const url = URL.createObjectURL(blob);
+  urlCache.set(id, url);
+  return url;
+};
+
+// Clean up cached URLs
+export const cleanupImageURL = (id: string) => {
+  const url = urlCache.get(id);
+  if (url) {
+    URL.revokeObjectURL(url);
+    urlCache.delete(id);
+  }
 };
 
 // Convert File to Blob and compress if needed

@@ -245,10 +245,13 @@ export const generateOutfits = (
   // Sort by score (highest first) and take top N
   outfitCandidates.sort((a, b) => b.score - a.score);
 
-  // Convert to Outfit objects
+  // Convert to Outfit objects and ensure image property is set for all items
   const outfits: Outfit[] = outfitCandidates.slice(0, count).map(candidate => ({
     id: crypto.randomUUID(),
-    items: candidate.items,
+    items: candidate.items.map(item => ({
+      ...item,
+      image: item.id // Ensure image property matches the item ID
+    })),
     createdAt: new Date(),
     liked: undefined,
   }));
