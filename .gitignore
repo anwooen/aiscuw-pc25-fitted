@@ -25,6 +25,9 @@ dist-ssr
 claude.md
 .vercel
 PHASE_11B_SUMMARY.md
+claude_full.md 
+claude_weaknesses.md
+elite-mode.md
 
 # Documentation and test files
 AI_INTEGRATION_GUIDE.md
