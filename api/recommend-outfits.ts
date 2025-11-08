@@ -1,17 +1,24 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { RecommendOutfitsRequest, RecommendOutfitsResponse, ClothingItem, StylePreference } from '../src/types';
-import OpenAI from 'openai';
+import { RecommendOutfitsRequest, RecommendOutfitsResponse } from '../src/types';
+import { OpenAIError, APIResponseType, OutfitSuggestion } from '../src/types/api';
+import { OpenAIService } from '../src/services/openai';
+import { PromptBuilder } from '../src/services/promptBuilder';
+import { Logger } from '../src/services/logger';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI service
+const openaiService = new OpenAIService(process.env.OPENAI_API_KEY || '');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const logger = Logger.getInstance();
+  
   // Only allow POST requests
   if (req.method !== 'POST') {
+    logger.warn('Invalid method', { method: req.method });
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
+
+  // Get client ID from request headers
+  const clientId = req.headers['x-client-id']?.toString() || req.headers['x-forwarded-for']?.toString() || 'default';
 
   try {
     const request = req.body as RecommendOutfitsRequest;
@@ -32,27 +39,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } as RecommendOutfitsResponse);
     }
 
-    // Build wardrobe description for AI (text-only, no images!)
-    const wardrobeDescription = wardrobe.map((item: any) => {
-      const desc = item.aiAnalysis?.description || 'No description available';
-      return `ID: ${item.id}
-Category: ${item.category}
-Colors: ${item.colors.join(', ')}
-Description: ${desc}
-${item.aiAnalysis?.suggestedStyles ? `Styles: ${item.aiAnalysis.suggestedStyles.join(', ')}` : ''}
-${item.aiAnalysis?.season ? `Season: ${item.aiAnalysis.season}` : ''}
-${item.aiAnalysis?.formality ? `Formality: ${item.aiAnalysis.formality}` : ''}`;
-    }).join('\n\n---\n\n');
-
-    // Build weather context
-    const weatherContext = weather
-      ? `Today's Weather:
-- Temperature: ${weather.temperature}°F (feels like ${weather.feelsLike}°F)
-- Condition: ${weather.condition}
-- Precipitation: ${weather.precipitation}%
-- Humidity: ${weather.humidity}%
-- Wind: ${weather.windSpeed} mph`
-      : 'Weather data not available.';
+    // Build prompt components using PromptBuilder
+    const wardrobeDescription = PromptBuilder.buildWardrobeDescription(wardrobe);
+    const weatherContext = PromptBuilder.buildWeatherContext(weather);
 
     // Build enhanced user personality profile (Phase 13)
     const buildPersonalityProfile = () => {
@@ -200,80 +189,19 @@ ${item.aiAnalysis?.formality ? `Formality: ${item.aiAnalysis.formality}` : ''}`;
     const preferencesContext = buildPersonalityProfile();
 
     // Prepare the prompt
-    const systemPrompt = `You are an expert fashion stylist AI. Your job is to create ${count} outfit combinations from the user's wardrobe based on their detailed personality profile.
+    const systemPrompt = PromptBuilder.buildSystemPrompt(count);
+    const userPrompt = PromptBuilder.buildUserPrompt(
+      count,
+      wardrobeDescription,
+      weatherContext,
+      preferencesContext
+    );
 
-Rules:
-1. Each outfit must include at least: 1 top, 1 bottom, and 1 pair of shoes
-2. You can include outerwear and accessories as optional additions
-3. Consider weather appropriateness
-4. Match the user's style preferences AND personality profile (occasions, fit, lifestyle, goals)
-5. Create color-coordinated outfits that respect their color preferences
-6. Vary the outfits to give diverse options
-7. Provide specific reasoning for each outfit that REFERENCES their profile (e.g., "Perfect for class", "Matches your minimalist inspiration")
-8. Respect pattern preferences (avoid patterns they dislike)
-9. Consider their fashion risk tolerance (safe vs experimental outfits)
-
-Your response must be valid JSON with this exact structure:
-{
-  "outfits": [
-    {
-      "itemIds": ["id1", "id2", "id3"],
-      "reasoning": "Explanation referencing their profile (goals, occasions, preferences)",
-      "score": 85
-    }
-  ]
-}
-
-Score each outfit 0-100 based on:
-- Style match to preferences (30%)
-- Weather appropriateness (20%)
-- Color coordination (20%)
-- Fit with lifestyle/occasions (20%)
-- Alignment with fashion goals (10%)`;
-
-    const userPrompt = `Please create ${count} outfit recommendations from this wardrobe:
-
-${wardrobeDescription}
-
-${weatherContext}
-
-${preferencesContext}
-
-Create ${count} diverse, stylish outfit combinations and explain your choices.`;
-
-    // Call GPT-4o API (text-only, much cheaper!)
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: userPrompt,
-        },
-      ],
-      max_tokens: 2000,
-      temperature: 0.7, // Higher temperature for more creative outfit combinations
-      response_format: { type: 'json_object' },
-    });
-
-    // Parse the response
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
-    }
-
-    const result = JSON.parse(content);
-
-    // Validate the response structure
-    if (!result.outfits || !Array.isArray(result.outfits)) {
-      throw new Error('Invalid response structure from AI');
-    }
+    // Generate outfit recommendations using OpenAI with client ID for rate limiting
+    const result = await openaiService.generateOutfitRecommendations(systemPrompt, userPrompt, clientId);
 
     // Sort outfits by score (highest first)
-    const sortedOutfits = result.outfits.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+    const sortedOutfits = result.outfits.sort((a: OutfitSuggestion, b: OutfitSuggestion) => b.score - a.score);
 
     // Return the recommendations
     return res.status(200).json({
@@ -281,27 +209,46 @@ Create ${count} diverse, stylish outfit combinations and explain your choices.`;
       outfits: sortedOutfits.slice(0, count), // Limit to requested count
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating outfit recommendations:', error);
 
-    // Handle different error types
-    if (error?.status === 401) {
-      return res.status(500).json({
-        success: false,
-        error: 'API authentication failed. Please check server configuration.',
-      });
+    interface ErrorWithStatus {
+      status: number;
+      message?: string;
     }
 
-    if (error?.status === 429) {
-      return res.status(429).json({
-        success: false,
-        error: 'Rate limit exceeded. Please try again later.',
-      });
+    interface ErrorWithMessage {
+      message: string;
     }
 
-    return res.status(500).json({
-      success: false,
-      error: error?.message || 'Failed to generate outfit recommendations',
-    });
+    const errorResponse = (status: number, message: string): VercelResponse => {
+      return res.status(status).json({
+        success: false,
+        error: message
+      } as RecommendOutfitsResponse);
+    };
+
+    // Handle OpenAI API errors
+    if (error && typeof error === 'object') {
+      // Check for API authentication and rate limit errors
+      if ('status' in error && typeof (error as ErrorWithStatus).status === 'number') {
+        const statusError = error as ErrorWithStatus;
+        if (statusError.status === 401) {
+          return errorResponse(500, 'API authentication failed. Please check server configuration.');
+        }
+        if (statusError.status === 429) {
+          return errorResponse(429, 'Rate limit exceeded. Please try again later.');
+        }
+      }
+
+      // Handle errors with message property
+      if ('message' in error && typeof (error as ErrorWithMessage).message === 'string') {
+        const messageError = error as ErrorWithMessage;
+        return errorResponse(500, messageError.message);
+      }
+    }
+
+    // Default error response for unknown errors
+    return errorResponse(500, 'Failed to generate outfit recommendations');
   }
 }

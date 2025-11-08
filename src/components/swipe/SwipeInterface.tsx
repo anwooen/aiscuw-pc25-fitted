@@ -66,7 +66,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     }
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!currentOutfit) return;
 
     setDirection('right');
@@ -84,16 +84,30 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     // Show success animation
     setShowSuccess(true);
 
-    // Animate out
-    setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-      x.set(0);
-      setDirection(null);
-      setShowSuccess(false);
-    }, 600);
+    // Check if we're about to hit the end
+    if (currentIndex === dailySuggestions.length - 1) {
+      // Pre-generate next set of outfits
+      try {
+        const generated = generateOutfits(wardrobe, profile, 10);
+        if (generated && generated.length > 0) {
+          setDailySuggestions(generated);
+          setCurrentIndex(0); // Reset to first outfit
+        }
+      } catch (err) {
+        console.error('New outfit generation failed:', err);
+      }
+    } else {
+      // Normal progression
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+        x.set(0);
+        setDirection(null);
+        setShowSuccess(false);
+      }, 600);
+    }
   };
 
-  const handleDislike = () => {
+  const handleDislike = async () => {
     if (!currentOutfit) return;
 
     setDirection('left');
@@ -105,12 +119,26 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     };
     addOutfit(dislikedOutfit);
 
-    // Animate out
-    setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-      x.set(0);
-      setDirection(null);
-    }, 300);
+    // Check if we're about to hit the end
+    if (currentIndex === dailySuggestions.length - 1) {
+      // Pre-generate next set of outfits
+      try {
+        const generated = generateOutfits(wardrobe, profile, 10);
+        if (generated && generated.length > 0) {
+          setDailySuggestions(generated);
+          setCurrentIndex(0); // Reset to first outfit
+        }
+      } catch (err) {
+        console.error('New outfit generation failed:', err);
+      }
+    } else {
+      // Normal progression
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+        x.set(0);
+        setDirection(null);
+      }, 300);
+    }
   };
 
   if (!dailySuggestions.length) {
@@ -136,35 +164,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     );
   }
 
-  if (currentIndex >= dailySuggestions.length) {
-    // Generate new outfits when reaching the end
-    useEffect(() => {
-      if (wardrobe.length > 0) {
-        try {
-          const generated = generateOutfits(wardrobe, profile, 10);
-          if (generated && generated.length > 0) {
-            setDailySuggestions(generated);
-            setCurrentIndex(0); // Reset to first outfit
-          }
-        } catch (err) {
-          console.error('New outfit generation failed:', err);
-        }
-      }
-    }, [currentIndex]);
-
-    // Show loading state while generating new outfits
-    return (
-      <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-uw-purple mb-4"></div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Generating New Outfits
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400">
-          Creating more fashion combinations for you...
-        </p>
-      </div>
-    );
-  }
+  // Remove this block as we now handle outfit generation in the swipe handlers
 
   return (
     <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-8">
