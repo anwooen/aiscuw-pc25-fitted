@@ -22,15 +22,32 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude documentation (working file only, not the docs/ folder)
 claude.md
-.vercel
-PHASE_11B_SUMMARY.md
 CLAUDE_CONDENSED.md
 claude_full.md
 claude_weaknesses.md
 elite-mode.md
+old_claude.md
+README.md 
+old-claude.md
+welcome-black-screen.md
+phase01-07.md
+phase09.md
+phase10.md
+phase12.md
+phase11.md
+phase13.md
+phase14.md
+dev_shortcuts.md
 
-# Documentation and test files
+
+# Vercel
+.vercel
+
+# Old documentation and test files
+PHASE_11B_SUMMARY.md
 AI_INTEGRATION_GUIDE.md
 DATASET_README.md
 test-api.js

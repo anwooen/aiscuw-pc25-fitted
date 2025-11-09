@@ -18,7 +18,7 @@ const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings'
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
 type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings';
 
-// Loading fallback component
+// Loading fallback component``
 const LoadingFallback = () => (
   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
     <div className="text-center">
@@ -227,9 +227,9 @@ function App() {
             </div>
           </header>
           
-          <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="max-w-2xl mx-auto p-6 space-y-6">
             {/* Reset Onboarding Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
                   <RotateCcw className="w-5 h-5 text-red-600 dark:text-red-400" />
@@ -248,9 +248,9 @@ function App() {
                         window.location.reload();
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                    className="w-full py-4 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-3 h-3" />
                     Reset Onboarding
                   </button>
                 </div>
