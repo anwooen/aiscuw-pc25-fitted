@@ -81,7 +81,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     }
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!currentOutfit) return;
 
     setDirection('right');
@@ -99,16 +99,30 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     // Show success animation
     setShowSuccess(true);
 
-    // Animate out
-    setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-      x.set(0);
-      setDirection(null);
-      setShowSuccess(false);
-    }, 600);
+    // Check if we're about to hit the end
+    if (currentIndex === dailySuggestions.length - 1) {
+      // Pre-generate next set of outfits
+      try {
+        const generated = generateOutfits(wardrobe, profile, 10);
+        if (generated && generated.length > 0) {
+          setDailySuggestions(generated);
+          setCurrentIndex(0); // Reset to first outfit
+        }
+      } catch (err) {
+        console.error('New outfit generation failed:', err);
+      }
+    } else {
+      // Normal progression
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+        x.set(0);
+        setDirection(null);
+        setShowSuccess(false);
+      }, 600);
+    }
   };
 
-  const handleDislike = () => {
+  const handleDislike = async () => {
     if (!currentOutfit) return;
 
     setDirection('left');
@@ -120,12 +134,30 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     };
     addOutfit(dislikedOutfit);
 
-    // Animate out
-    setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-      x.set(0);
-      setDirection(null);
-    }, 300);
+    // Check if we're about to hit the end
+    if (currentIndex === dailySuggestions.length - 1) {
+      // Start background generation of next set while showing completion screen
+      try {
+        const generated = generateOutfits(wardrobe, profile, 10);
+        if (generated && generated.length > 0) {
+          setDailySuggestions(generated);
+          setTimeout(() => {
+            setCurrentIndex(0); // Reset to first outfit after delay
+            x.set(0);
+            setDirection(null);
+          }, 300);
+        }
+      } catch (err) {
+        console.error('New outfit generation failed:', err);
+      }
+    } else {
+      // Normal progression
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+        x.set(0);
+        setDirection(null);
+      }, 300);
+    }
   };
 
   if (!dailySuggestions.length) {
@@ -139,6 +171,20 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   }
 
   if (currentIndex >= dailySuggestions.length) {
+    // Pre-generate next set of outfits
+    if (wardrobe.length > 0) {
+      try {
+        const generated = generateOutfits(wardrobe, profile, 10);
+        if (generated && generated.length > 0) {
+          setDailySuggestions(generated);
+          setCurrentIndex(0); // Reset to first outfit
+        }
+      } catch (err) {
+        console.error('New outfit generation failed:', err);
+      }
+    }
+
+    // Show completion screen while generating
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
         <Sparkles className="w-16 h-16 text-uw-purple mb-4" />
