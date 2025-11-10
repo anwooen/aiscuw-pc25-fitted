@@ -1,4 +1,5 @@
 import { X, Heart, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface SwipeControlsProps {
   onDislike: () => void;
@@ -7,6 +8,24 @@ interface SwipeControlsProps {
 }
 
 export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProps) {
+  // Keyboard controls: Arrow keys for like/dislike
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (disabled) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        onDislike();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        onLike();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [onDislike, onLike, disabled]);
+
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="flex items-center justify-center gap-12">
@@ -24,6 +43,10 @@ export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProp
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-red-500 transition-colors">
             Dislike
           </span>
+          <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-600">
+            <ArrowLeft className="w-3 h-3" />
+            <span>Arrow</span>
+          </div>
         </button>
 
         {/* Like Button - Enhanced for Desktop */}
@@ -45,6 +68,10 @@ export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProp
           <span className="text-sm font-bold text-uw-purple dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
             Like
           </span>
+          <div className="flex items-center gap-1 text-xs text-uw-purple/60 dark:text-purple-500/60">
+            <span>Arrow</span>
+            <ArrowRight className="w-3 h-3" />
+          </div>
         </button>
       </div>
     </div>
