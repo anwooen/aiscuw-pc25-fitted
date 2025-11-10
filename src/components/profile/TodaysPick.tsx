@@ -4,6 +4,8 @@ import { WardrobeUpload } from '../wardrobe/WardrobeUpload';
 import { meetsMinimumRequirements } from '../../utils/outfitGenerator';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { getImageURL } from '../../utils/storage';
+import { useWeather } from '../../hooks/useWeather';
+import { WeatherWidget } from '../shared/WeatherWidget';
 
 // Image component that loads from IndexedDB
 const TodayPickItemImage = memo(({ itemId, category }: { itemId: string; category: string }) => {
@@ -50,6 +52,9 @@ TodayPickItemImage.displayName = 'TodayPickItemImage';
 export const TodaysPick = () => {
   const { todaysPick, setTodaysPick, wardrobe } = useStore();
   const [showUploadModal, setShowUploadModal] = useState(false);
+
+  // Weather data for context
+  const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
 
   const canSwipe = meetsMinimumRequirements(wardrobe);
 
@@ -122,6 +127,16 @@ export const TodaysPick = () => {
           </div>
           <p className="text-white opacity-80">Your selected outfit for today</p>
         </div>
+      </div>
+
+      {/* Weather Widget */}
+      <div className="max-w-2xl mx-auto px-6 -mt-3 mb-3">
+        <WeatherWidget weather={weather} loading={weatherLoading} error={weatherError} onRequestWeather={fetchWeather} />
+        {weather && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">
+            Perfect for {Math.round(weather.temperature)}°F and {weather.condition.toLowerCase()} weather!
+          </p>
+        )}
       </div>
 
       {/* Outfit Display */}

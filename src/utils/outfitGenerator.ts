@@ -1,4 +1,4 @@
-import type { ClothingItem, Outfit, UserProfile, StylePreference } from '../types';
+import type { ClothingItem, Outfit, UserProfile, StylePreference, WeatherData } from '../types';
 
 // Color compatibility matrix based on color theory
 // Each color maps to colors it pairs well with
@@ -120,9 +120,96 @@ export const calculateFavoriteColorBonus = (
 };
 
 /**
- * Score a complete outfit based on color compatibility, style, and user preferences
+ * Helper: Check if outfit has outerwear
  */
-export const scoreOutfit = (outfit: ClothingItem[], userProfile: UserProfile): number => {
+const hasOuterwear = (outfit: ClothingItem[]): boolean => {
+  return outfit.some(item => item.category === 'outerwear');
+};
+
+/**
+ * Helper: Check if outfit has shorts (bottom with "short" in description)
+ */
+const hasShorts = (outfit: ClothingItem[]): boolean => {
+  return outfit.some(item =>
+    item.category === 'bottom' &&
+    (item.aiAnalysis?.description?.toLowerCase().includes('short') ?? false)
+  );
+};
+
+/**
+ * Helper: Check if outfit has long sleeves (top with "long" in description)
+ */
+const hasLongSleeves = (outfit: ClothingItem[]): boolean => {
+  return outfit.some(item =>
+    item.category === 'top' &&
+    (item.aiAnalysis?.description?.toLowerCase().includes('long') ?? false)
+  );
+};
+
+/**
+ * Helper: Check if outfit has white bottoms
+ */
+const hasWhiteBottoms = (outfit: ClothingItem[]): boolean => {
+  return outfit.some(item =>
+    item.category === 'bottom' &&
+    item.colors.some(color => color.toLowerCase() === 'white')
+  );
+};
+
+/**
+ * Helper: Check if outfit has dark colors (black, navy, brown, dark gray)
+ */
+const hasDarkColors = (outfit: ClothingItem[]): boolean => {
+  const darkColors = ['black', 'navy', 'brown', 'dark gray', 'charcoal'];
+  return outfit.some(item =>
+    item.colors.some(color => darkColors.includes(color.toLowerCase()))
+  );
+};
+
+/**
+ * Calculate weather appropriateness score for an outfit
+ * Returns a bonus/penalty from -0.3 to +0.3
+ */
+const calculateWeatherScore = (outfit: ClothingItem[], weather: WeatherData): number => {
+  let score = 0;
+  const temp = weather.temperature;
+
+  // Temperature-based scoring
+  if (temp < 50) {
+    // Cold weather (<50°F)
+    if (hasOuterwear(outfit)) score += 0.2;
+    if (hasLongSleeves(outfit)) score += 0.15;
+    if (hasShorts(outfit)) score -= 0.3; // Penalize shorts in cold
+  } else if (temp > 70) {
+    // Warm weather (>70°F)
+    if (hasShorts(outfit)) score += 0.2;
+    if (!hasLongSleeves(outfit)) score += 0.1; // Prefer short sleeves
+    if (hasOuterwear(outfit)) score -= 0.2; // Too warm for jacket
+    if (hasDarkColors(outfit)) score -= 0.1; // Dark colors absorb heat
+  } else {
+    // Mild weather (50-70°F) - most versatile
+    score += 0.05; // Small bonus for being in the sweet spot
+  }
+
+  // Precipitation-based scoring
+  if (weather.precipitation > 30) {
+    // Rainy weather
+    if (hasWhiteBottoms(outfit)) score -= 0.2; // Avoid mud stains
+    // Could add: waterproof shoes bonus if we had that data
+  }
+
+  // Clamp score to reasonable range
+  return Math.max(-0.3, Math.min(0.3, score));
+};
+
+/**
+ * Score a complete outfit based on color compatibility, style, user preferences, and weather
+ */
+export const scoreOutfit = (
+  outfit: ClothingItem[],
+  userProfile: UserProfile,
+  weather?: WeatherData
+): number => {
   if (outfit.length < 2) return 0;
 
   // Calculate pairwise color compatibility
@@ -144,9 +231,14 @@ export const scoreOutfit = (outfit: ClothingItem[], userProfile: UserProfile): n
   // Calculate favorite color bonus
   const favoriteBonus = calculateFavoriteColorBonus(outfit, userProfile.favoriteColors);
 
+  // Calculate weather score (if weather data available)
+  const weatherScore = weather ? calculateWeatherScore(outfit, weather) : 0;
+
   // Weighted final score
-  // Color compatibility: 50%, Style: 40%, Favorite colors: 10%
-  const finalScore = (avgColorScore * 0.5) + (styleScore * 0.4) + (favoriteBonus * 0.1);
+  // Base score: Color (50%) + Style (40%) + Favorites (10%)
+  // Weather bonus/penalty: -0.3 to +0.3 added on top
+  const baseScore = (avgColorScore * 0.5) + (styleScore * 0.4) + (favoriteBonus * 0.1);
+  const finalScore = baseScore + weatherScore;
 
   return finalScore;
 };
@@ -155,7 +247,8 @@ export const scoreOutfit = (outfit: ClothingItem[], userProfile: UserProfile): n
 export const generateOutfits = (
   wardrobe: ClothingItem[],
   profile: UserProfile,
-  count: number = 10
+  count: number = 10,
+  weather?: WeatherData
 ): Outfit[] => {
   // Separate items by category
   const tops = wardrobe.filter((item) => item.category === 'top');
@@ -205,7 +298,7 @@ export const generateOutfits = (
       }
 
       usedCombinations.add(comboKey);
-      const score = scoreOutfit(items, profile);
+      const score = scoreOutfit(items, profile, weather);
 
       // Only keep outfits with decent scores (> 0.3)
       if (score > 0.3) {
@@ -231,7 +324,7 @@ export const generateOutfits = (
             items.push(randomAccessory);
           }
 
-          const score = scoreOutfit(items, profile);
+          const score = scoreOutfit(items, profile, weather);
 
           // Only keep outfits with decent scores (> 0.3)
           if (score > 0.3) {

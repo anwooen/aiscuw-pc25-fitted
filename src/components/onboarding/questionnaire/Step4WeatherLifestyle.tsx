@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Snowflake, Flame, Layers, CloudRain, User, Bike, Car, Bus } from 'lucide-react';
+import { Snowflake, Flame, Layers, CloudRain, User, Bike, Car, Bus, MapPin, Check } from 'lucide-react';
 import { QuestionCard } from './QuestionCard';
+import { getUserLocation } from '../../../services/api';
+import { useStore } from '../../../store/useStore';
 
 type ActivityLevel = 'sedentary' | 'moderate' | 'active' | 'very-active';
 type CommuteMethod = 'walk' | 'bike' | 'drive' | 'public-transit';
@@ -47,6 +50,32 @@ export function Step4WeatherLifestyle({
   onWeatherChange,
   onLifestyleChange,
 }: Step4WeatherLifestyleProps) {
+  // Access Zustand store for saving location
+  const profile = useStore((state) => state.profile);
+  const setProfile = useStore((state) => state.setProfile);
+
+  // Track location request status
+  const [locationStatus, setLocationStatus] = useState<'pending' | 'loading' | 'granted' | 'denied'>('pending');
+
+  // Handle location request
+  const handleRequestLocation = async () => {
+    setLocationStatus('loading');
+    try {
+      const coords = await getUserLocation();
+      setProfile({
+        ...profile,
+        location: {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        },
+      });
+      setLocationStatus('granted');
+    } catch (error) {
+      console.warn('Location access denied:', error);
+      setLocationStatus('denied');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -235,6 +264,60 @@ export function Step4WeatherLifestyle({
               : 'You love trying new, experimental looks!'}
           </div>
         </div>
+      </QuestionCard>
+
+      {/* Location Request for Weather-Aware Outfits */}
+      <QuestionCard delay={0.4}>
+        <h3 className="text-2xl font-bold text-white mb-4">Enable Weather-Aware Outfits?</h3>
+        <p className="text-white/70 mb-6">
+          We'll suggest outfits based on your local weather (temperature, rain, etc.). Your location stays private and is only stored on your device.
+        </p>
+
+        {/* Pending State: Show request button */}
+        {locationStatus === 'pending' && (
+          <motion.button
+            onClick={handleRequestLocation}
+            className="w-full py-4 px-6 bg-uw-purple border-2 border-uw-gold rounded-xl text-white font-bold
+                       hover:bg-purple-700 transition-colors flex items-center justify-center gap-3"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <MapPin className="w-5 h-5" />
+            Share My Location
+          </motion.button>
+        )}
+
+        {/* Loading State: User clicked, waiting for permission */}
+        {locationStatus === 'loading' && (
+          <div className="w-full py-4 px-6 bg-white/10 rounded-xl text-white text-center">
+            <div className="animate-pulse">Requesting location...</div>
+          </div>
+        )}
+
+        {/* Granted State: Success! */}
+        {locationStatus === 'granted' && (
+          <div className="w-full py-4 px-6 bg-green-500/20 border-2 border-green-500 rounded-xl
+                          text-green-400 flex items-center justify-center gap-2">
+            <Check className="w-5 h-5" />
+            <span className="font-bold">Location saved! Weather-aware outfits enabled.</span>
+          </div>
+        )}
+
+        {/* Denied State: User said no or browser blocked */}
+        {locationStatus === 'denied' && (
+          <div className="space-y-3">
+            <div className="w-full py-4 px-6 bg-orange-500/20 border-2 border-orange-500 rounded-xl
+                            text-orange-400 text-center">
+              No problem! You can enable this later in settings.
+            </div>
+            <button
+              onClick={handleRequestLocation}
+              className="w-full py-2 text-white/70 hover:text-white text-sm underline transition-colors"
+            >
+              Try again
+            </button>
+          </div>
+        )}
       </QuestionCard>
     </div>
   );

@@ -5,8 +5,9 @@ import { useStore } from '../../store/useStore';
 import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
 import { SwipeControls } from './SwipeControls';
-import { Button } from '../shared/Button';
 import { generateOutfits } from '../../utils/outfitGenerator';
+import { useWeather } from '../../hooks/useWeather';
+import { WeatherWidget } from '../shared/WeatherWidget';
 
 const SWIPE_THRESHOLD = 100;
 
@@ -22,6 +23,9 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
 
+  // Weather data for context
+  const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
+
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
@@ -32,7 +36,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   useEffect(() => {
     if (!dailySuggestions.length && wardrobe.length > 0) {
       try {
-        const generated = generateOutfits(wardrobe, profile, 10);
+        const generated = generateOutfits(wardrobe, profile, 10, weather ?? undefined);
         if (generated && generated.length > 0) {
           setDailySuggestions(generated as Outfit[]);
         }
@@ -40,7 +44,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
         console.error('Fallback outfit generation failed:', err);
       }
     }
-  }, [dailySuggestions.length, wardrobe, profile, setDailySuggestions]);
+  }, [dailySuggestions.length, wardrobe, profile, weather, setDailySuggestions]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -99,18 +103,12 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     // Show success animation
     setShowSuccess(true);
 
-    // Check if we're about to hit the end
+    // Check if we're at the last outfit
     if (currentIndex === dailySuggestions.length - 1) {
-      // Pre-generate next set of outfits
-      try {
-        const generated = generateOutfits(wardrobe, profile, 10);
-        if (generated && generated.length > 0) {
-          setDailySuggestions(generated);
-          setCurrentIndex(0); // Reset to first outfit
-        }
-      } catch (err) {
-        console.error('New outfit generation failed:', err);
-      }
+      // Navigate to history page after animation
+      setTimeout(() => {
+        onNavigate?.('history');
+      }, 600);
     } else {
       // Normal progression
       setTimeout(() => {
@@ -134,22 +132,12 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     };
     addOutfit(dislikedOutfit);
 
-    // Check if we're about to hit the end
+    // Check if we're at the last outfit
     if (currentIndex === dailySuggestions.length - 1) {
-      // Start background generation of next set while showing completion screen
-      try {
-        const generated = generateOutfits(wardrobe, profile, 10);
-        if (generated && generated.length > 0) {
-          setDailySuggestions(generated);
-          setTimeout(() => {
-            setCurrentIndex(0); // Reset to first outfit after delay
-            x.set(0);
-            setDirection(null);
-          }, 300);
-        }
-      } catch (err) {
-        console.error('New outfit generation failed:', err);
-      }
+      // Navigate to history page after animation
+      setTimeout(() => {
+        onNavigate?.('history');
+      }, 300);
     } else {
       // Normal progression
       setTimeout(() => {
@@ -171,59 +159,16 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   }
 
   if (currentIndex >= dailySuggestions.length) {
-    // Pre-generate next set of outfits
-    if (wardrobe.length > 0) {
-      try {
-        const generated = generateOutfits(wardrobe, profile, 10);
-        if (generated && generated.length > 0) {
-          setDailySuggestions(generated);
-          setCurrentIndex(0); // Reset to first outfit
-        }
-      } catch (err) {
-        console.error('New outfit generation failed:', err);
-      }
-    }
-
-    // Show completion screen while generating
-    return (
-      <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
-        <Sparkles className="w-16 h-16 text-uw-purple mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          All Done!
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
-          You've reviewed all of today's outfit suggestions.
-        </p>
-
-        {/* Navigation buttons */}
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentIndex(0)}
-          >
-            Review Again
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => onNavigate?.('todaysPick')}
-          >
-            View Today's Pick
-          </Button>
-        </div>
-      </div>
-    );
+    // Fallback: Navigate to history if somehow we're past the end
+    onNavigate?.('history');
+    return null;
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-8">
-      {/* Instructions */}
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          Find Your Perfect Outfit
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Click the buttons, use arrow keys, or drag to choose
-        </p>
+    <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-6 overflow-x-hidden">
+      {/* Weather Widget - Visible and centered above card */}
+      <div className="mb-4">
+        <WeatherWidget weather={weather} loading={weatherLoading} error={weatherError} onRequestWeather={fetchWeather} />
       </div>
 
       {/* Success Animation */}
@@ -242,7 +187,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       )}
 
       {/* Card Stack */}
-      <div className="relative flex-1 mb-8">
+      <div className="relative h-[360px] mb-6">
         {/* Next card preview */}
         {dailySuggestions[currentIndex + 1] && (
           <div className="absolute inset-0 opacity-50 scale-95">
@@ -259,6 +204,8 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
             opacity,
           }}
           drag="x"
+          dragConstraints={{ left: -300, right: 300 }}
+          dragElastic={0.2}
           onDragEnd={handleDragEnd}
           animate={
             direction === 'right'
@@ -292,7 +239,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       </div>
 
       {/* Swipe Controls */}
-      <div className="pb-4">
+      <div className="mb-6">
         <SwipeControls
           onDislike={handleDislike}
           onLike={handleLike}
@@ -301,7 +248,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       </div>
 
       {/* Progress indicator */}
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+      <div className="text-center text-sm text-gray-500 dark:text-gray-400 pb-2">
         {currentIndex + 1} / {dailySuggestions.length}
       </div>
     </div>

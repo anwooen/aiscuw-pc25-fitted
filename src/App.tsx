@@ -284,7 +284,7 @@ function App() {
           {/* Swipe Interface */}
           <div className="h-[calc(100vh-140px)]">
             <Suspense fallback={<LoadingFallback />}>
-              <SwipeInterface />
+              <SwipeInterface onNavigate={setCurrentView} />
             </Suspense>
           </div>
         </div>

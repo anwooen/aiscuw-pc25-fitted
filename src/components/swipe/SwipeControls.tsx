@@ -9,18 +9,6 @@ interface SwipeControlsProps {
 export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProps) {
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Keyboard shortcuts hint */}
-      <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-4">
-        <span className="flex items-center gap-1">
-          <ArrowLeft className="w-3 h-3" />
-          Dislike
-        </span>
-        <span className="flex items-center gap-1">
-          <ArrowRight className="w-3 h-3" />
-          Like
-        </span>
-      </div>
-
       <div className="flex items-center justify-center gap-12">
         {/* Dislike Button - Enhanced for Desktop */}
         <button
@@ -46,13 +34,13 @@ export function SwipeControls({ onDislike, onLike, disabled }: SwipeControlsProp
           aria-label="Like outfit"
         >
           <div
-            className="relative w-24 h-24 rounded-full shadow-lg hover:shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95"
+            className="relative w-20 h-20 rounded-full shadow-lg hover:shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95"
             style={{
               background: 'linear-gradient(to bottom right, #4b2e83, #7c3aed)'
             }}
           >
             <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Heart className="absolute inset-0 m-auto w-12 h-12" style={{ color: '#ffffff', fill: '#ffffff' }} strokeWidth={0} />
+            <Heart className="absolute inset-0 m-auto w-10 h-10" style={{ color: '#ffffff', fill: '#ffffff' }} strokeWidth={0} />
           </div>
           <span className="text-sm font-bold text-uw-purple dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
             Like

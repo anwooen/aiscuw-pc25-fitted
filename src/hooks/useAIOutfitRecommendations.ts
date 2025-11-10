@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { generateOutfits } from '../utils/outfitGenerator';
-import { recommendOutfits, getWeather, getUserLocation } from '../services/api';
+import { recommendOutfits } from '../services/api';
+import { useWeather } from './useWeather';
 import type { Outfit, WeatherData, RecommendOutfitsRequest } from '../types';
 
 interface CachedAIOutfits {
@@ -11,8 +12,6 @@ interface CachedAIOutfits {
 }
 
 const AI_CACHE_KEY = 'fitted-ai-daily-outfits';
-const WEATHER_CACHE_KEY = 'fitted-weather-cache';
-const WEATHER_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Check if we should regenerate outfits for today
@@ -71,46 +70,6 @@ const saveCachedAIOutfits = (outfits: Outfit[], weather?: WeatherData): void => 
   }
 };
 
-/**
- * Load cached weather from localStorage
- */
-const loadCachedWeather = (): { weather: WeatherData; cachedAt: string } | null => {
-  try {
-    const cached = localStorage.getItem(WEATHER_CACHE_KEY);
-    if (!cached) return null;
-
-    const data = JSON.parse(cached);
-
-    // Check if cache is still valid (within 30 minutes)
-    const cachedTime = new Date(data.cachedAt).getTime();
-    const now = Date.now();
-
-    if (now - cachedTime > WEATHER_CACHE_DURATION) {
-      return null; // Cache expired
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Failed to load cached weather:', error);
-    return null;
-  }
-};
-
-/**
- * Save weather to localStorage cache
- */
-const saveCachedWeather = (weather: WeatherData): void => {
-  try {
-    const cache = {
-      weather,
-      cachedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(cache));
-  } catch (error) {
-    console.error('Failed to save cached weather:', error);
-  }
-};
-
 export interface UseAIOutfitRecommendationsOptions {
   useAI?: boolean; // Toggle between AI and classic algorithm
   count?: number; // Number of outfits to generate (default 10)
@@ -126,64 +85,22 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
   const wardrobe = useStore((state) => state.wardrobe);
   const profile = useStore((state) => state.profile);
 
+  // Use shared weather hook
+  const { weather, fetchWeather } = useWeather();
+
   const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
   const [lastGeneratedDate, setLastGeneratedDate] = useState<string | null>(null);
   const [isUsingAI, setIsUsingAI] = useState(useAI);
-
-  /**
-   * Fetch weather data with caching
-   */
-  const fetchWeather = async (): Promise<WeatherData | null> => {
-    try {
-      // Check cache first
-      const cached = loadCachedWeather();
-      if (cached) {
-        return cached.weather;
-      }
-
-      // Try to get user location
-      let location = profile.location;
-
-      if (!location) {
-        // Try to get location via geolocation API
-        try {
-          const coords = await getUserLocation();
-          location = {
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-          };
-        } catch (err) {
-          console.warn('Could not get user location:', err);
-          return null;
-        }
-      }
-
-      // Fetch weather
-      const response = await getWeather(location.latitude, location.longitude);
-
-      if (response.success && response.weather) {
-        saveCachedWeather(response.weather);
-        return response.weather;
-      }
-
-      return null;
-    } catch (err) {
-      console.error('Failed to fetch weather:', err);
-      return null;
-    }
-  };
 
   /**
    * Generate outfits using AI
    */
   const generateAIOutfits = async (): Promise<Outfit[] | null> => {
     try {
-      // Fetch weather data
-      const weatherData = await fetchWeather();
-      setWeather(weatherData || null);
+      // Ensure fresh weather data is available
+      await fetchWeather();
 
       // Prepare wardrobe data for AI (text descriptions only, no images!)
       const wardrobeData = wardrobe.map(item => ({
@@ -196,7 +113,7 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
       // Build AI request (Phase 13: include full profile for enhanced personalization)
       const request: RecommendOutfitsRequest = {
         wardrobe: wardrobeData,
-        weather: weatherData || undefined,
+        weather: weather || undefined,
         preferences: profile.stylePreferences,
         favoriteColors: profile.favoriteColors,
         count,
@@ -224,7 +141,7 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
       });
 
       // Cache the AI outfits
-      saveCachedAIOutfits(aiOutfits, weatherData || undefined);
+      saveCachedAIOutfits(aiOutfits, weather || undefined);
 
       return aiOutfits;
     } catch (err) {
@@ -238,7 +155,7 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
    * Generate outfits using classic algorithm
    */
   const generateClassicOutfits = (): Outfit[] => {
-    return generateOutfits(wardrobe, profile, count);
+    return generateOutfits(wardrobe, profile, count, weather ?? undefined);
   };
 
   /**
@@ -298,7 +215,7 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
       if (cached && !shouldRegenerateOutfits(cached.generatedAt)) {
         // Use cached AI outfits from today
         setOutfits(cached.outfits);
-        setWeather(cached.weather || null);
+        // Weather is managed by useWeather hook (no need to set it here)
         setLastGeneratedDate(cached.generatedAt);
       } else if (wardrobe.length > 0 && profile.hasCompletedOnboarding) {
         // Generate new AI outfits if cache is stale or doesn't exist
