@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+gitimport { useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { useStore } from '../../store/useStore';

@@ -23,6 +23,8 @@ export const WardrobeUpload = () => {
   const [batchMode, setBatchMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const operationIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { addClothingItem, profile } = useStore();
   const { convertImage, isConverting, progress, error: conversionError, checkIfNeedsConversion, getFormat } = useImageConverter();
@@ -37,6 +39,13 @@ export const WardrobeUpload = () => {
   ];
 
   const handleFileSelect = async (file: File) => {
+    // Increment operation ID to invalidate previous operations
+    const currentOpId = ++operationIdRef.current;
+    
+    // Abort any ongoing AI analysis
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    
     setError(null);
     setAiAnalysis(null);
 
@@ -59,6 +68,9 @@ export const WardrobeUpload = () => {
       // Convert the image
       const converted = await convertImage(file);
 
+      // Check if operation was cancelled
+      if (operationIdRef.current !== currentOpId) return;
+
       if (!converted) {
         setError(conversionError || 'Failed to convert image format. Please try a different image.');
         setIsUploading(false);
@@ -74,18 +86,24 @@ export const WardrobeUpload = () => {
       console.log('Phase 11B: Starting automatic background removal...');
       const backgroundRemovedFile = await backgroundRemoval.processImage(processedFile);
 
+      // Check if operation was cancelled
+      if (operationIdRef.current !== currentOpId) return;
+
       setSelectedFile(backgroundRemovedFile);
 
       // Create preview
       const reader = new FileReader();
       reader.onloadend = async () => {
-  const base64Image = reader.result as string;
-  setPreviewUrl(base64Image);
+        // Check if operation was cancelled while reading
+        if (operationIdRef.current !== currentOpId) return;
+        
+        const base64Image = reader.result as string;
+        setPreviewUrl(base64Image);
 
         // Do NOT hide uploading overlay here — wait until the image actually loads
         // Step 3: If AI is enabled, analyze the image (runs after preview is visible)
-        if (useAI) {
-          await handleAIAnalysis(base64Image);
+        if (useAI && operationIdRef.current === currentOpId) {
+          await handleAIAnalysis(base64Image, currentOpId);
         }
       };
       reader.readAsDataURL(backgroundRemovedFile);
@@ -97,28 +115,53 @@ export const WardrobeUpload = () => {
     }
   };
 
-  const handleAIAnalysis = async (base64Image: string) => {
+  const handleAIAnalysis = async (base64Image: string, opId: number) => {
     setIsAnalyzing(true);
     setError(null);
 
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     try {
-      const response = await analyzeClothing({
-        image: base64Image,
-        userPreferences: profile.stylePreferences,
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/analyze-clothing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64Image,
+          userPreferences: profile.stylePreferences,
+        }),
+        signal: abortController.signal,
       });
 
-      if (response.success && response.analysis) {
-        setAiAnalysis(response.analysis);
-        // Auto-select the suggested category (user can still override)
-    setSelectedCategory(response.analysis.suggestedCategory || null);
-      } else {
-        setError(response.error || 'Failed to analyze image with AI');
+      // Check if operation was cancelled
+      if (operationIdRef.current !== opId) return;
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    } catch (err) {
+
+      const data = await response.json();
+
+      if (data.success && data.analysis) {
+        setAiAnalysis(data.analysis);
+        // Auto-select the suggested category (user can still override)
+        setSelectedCategory(data.analysis.suggestedCategory || null);
+      } else {
+        setError(data.error || 'Failed to analyze image with AI');
+      }
+    } catch (err: any) {
+      // Ignore abort errors (user cancelled)
+      if (err.name === 'AbortError') return;
+      
       console.error('AI analysis error:', err);
-      setError('AI analysis failed. You can still add the item manually.');
+      if (operationIdRef.current === opId) {
+        setError('AI analysis failed. You can still add the item manually.');
+      }
     } finally {
-      setIsAnalyzing(false);
+      if (operationIdRef.current === opId) {
+        setIsAnalyzing(false);
+      }
     }
   };
 
@@ -208,12 +251,26 @@ export const WardrobeUpload = () => {
   }, [combinedProgress, isUploading, isProcessing]);
 
   const handleCancel = () => {
+    // Increment operation ID to invalidate all ongoing operations
+    operationIdRef.current++;
+    
+    // Abort ongoing AI request
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    
+    // Reset background removal hook
+    backgroundRemoval.reset();
+    
+    // Reset all state
     setSelectedFile(null);
     setPreviewUrl(null);
     setSelectedCategory(null);
     setError(null);
     setAiAnalysis(null);
     setIsAnalyzing(false);
+    setIsUploading(false);
+    
+    // Clear file inputs
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };

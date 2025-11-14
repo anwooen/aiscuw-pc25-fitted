@@ -34,3 +34,4 @@ elite-mode.md
 AI_INTEGRATION_GUIDE.md
 DATASET_README.md
 test-api.js
+.env.local
