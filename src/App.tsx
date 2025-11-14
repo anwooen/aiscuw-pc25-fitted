@@ -4,6 +4,7 @@ import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
 import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, Moon, Sun, RotateCcw } from 'lucide-react';
 import { MINIMUM_WARDROBE, UserProfile } from './types';
+import { Header } from './components/layout/Header';
 
 // Lazy load components for code splitting
 const Welcome = lazy(() => import('./components/onboarding/Welcome').then(m => ({ default: m.Welcome })));
@@ -14,11 +15,12 @@ const SwipeInterface = lazy(() => import('./components/swipe/SwipeInterface').th
 const TodaysPick = lazy(() => import('./components/profile/TodaysPick').then(m => ({ default: m.TodaysPick })));
 const OutfitHistory = lazy(() => import('./components/profile/OutfitHistory').then(m => ({ default: m.OutfitHistory })));
 const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings').then(m => ({ default: m.ProfileSettings })));
+const UIDesignDemo = lazy(() => import('./components/demo/UIDesignDemo').then(m => ({ default: m.UIDesignDemo })));
 
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
-type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings';
+type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'demo';
 
-// Loading fallback component
+// Loading fallback component``
 const LoadingFallback = () => (
   <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
     <div className="text-center">
@@ -197,9 +199,13 @@ function App() {
   if (currentView === 'todaysPick') {
     return (
       <>
-        <Suspense fallback={<LoadingFallback />}>
-          <TodaysPick />
-        </Suspense>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
+          <Header title="Today's Pick" centered />
+
+          <Suspense fallback={<LoadingFallback />}>
+            <TodaysPick />
+          </Suspense>
+        </div>
         <BottomNav />
       </>
     );
@@ -208,11 +214,23 @@ function App() {
   if (currentView === 'history') {
     return (
       <>
-        <Suspense fallback={<LoadingFallback />}>
-          <OutfitHistory />
-        </Suspense>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
+          <Header title="Outfit History" centered />
+
+          <Suspense fallback={<LoadingFallback />}>
+            <OutfitHistory />
+          </Suspense>
+        </div>
         <BottomNav />
       </>
+    );
+  }
+
+  if (currentView === 'demo') {
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <UIDesignDemo />
+      </Suspense>
     );
   }
 
@@ -220,16 +238,35 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          {/* Header */}
-          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-            <div className="container mx-auto px-4 py-4">
-              <h1 className="text-2xl font-bold text-uw-purple dark:text-purple-400">Settings</h1>
+          <Header title="Settings" centered />
+
+          <div className="max-w-2xl mx-auto p-6 space-y-6">
+            {/* UI Design Demo Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    UI Design Demo
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Explore different navigation and header designs. Try out 6 navigation styles and 6 header styles!
+                  </p>
+                  <button
+                    onClick={() => setCurrentView('demo')}
+                    className="w-full py-4 flex items-center justify-center gap-2 bg-gradient-to-r from-uw-purple to-purple-600 hover:from-purple-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    View UI Demo
+                  </button>
+                </div>
+              </div>
             </div>
-          </header>
-          
-          <div className="container mx-auto px-4 py-8 max-w-2xl">
+
             {/* Reset Onboarding Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
                   <RotateCcw className="w-5 h-5 text-red-600 dark:text-red-400" />
@@ -248,9 +285,9 @@ function App() {
                         window.location.reload();
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                    className="w-full py-4 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-3 h-3" />
                     Reset Onboarding
                   </button>
                 </div>
@@ -272,19 +309,12 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          {/* Header */}
-          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-            <div className="container mx-auto px-4 py-4">
-              <div className="flex items-center justify-center">
-                <h1 className="text-2xl font-bold text-uw-purple dark:text-purple-400">Today's Picks</h1>
-              </div>
-            </div>
-          </header>
+          <Header title="Today's Picks" centered />
 
           {/* Swipe Interface */}
           <div className="h-[calc(100vh-140px)]">
             <Suspense fallback={<LoadingFallback />}>
-              <SwipeInterface />
+              <SwipeInterface onNavigate={setCurrentView} />
             </Suspense>
           </div>
         </div>
@@ -297,39 +327,31 @@ function App() {
   return (
     <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-uw-purple">Fitted</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Build your wardrobe
-                </p>
+        <Header
+          title="Fitted"
+          subtitle="Build your wardrobe"
+          leftContent={
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-700" />
+              )}
+            </button>
+          }
+          rightContent={
+            <div className="text-right">
+              <div className="text-2xl font-bold text-uw-purple">
+                {wardrobeStats.stats.total}
               </div>
-              <div className="flex items-center gap-4">
-                {/* Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  aria-label="Toggle theme"
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="w-5 h-5 text-yellow-400" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-gray-700" />
-                  )}
-                </button>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-uw-purple">
-                    {wardrobeStats.stats.total}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">items</div>
-                </div>
-              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">items</div>
             </div>
-          </div>
-        </header>
+          }
+        />
 
         <div className="container mx-auto px-4 py-8 max-w-6xl pb-20">
           {/* Progress Card */}

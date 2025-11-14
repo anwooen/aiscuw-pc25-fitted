@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { generateOutfits } from '../utils/outfitGenerator';
+import { useWeather } from './useWeather';
 import type { Outfit } from '../types';
 
 interface CachedOutfits {
@@ -73,6 +74,7 @@ const saveCachedOutfits = (outfits: Outfit[]): void => {
 export const useOutfitGenerator = (count: number = 10) => {
   const wardrobe = useStore((state) => state.wardrobe);
   const profile = useStore((state) => state.profile);
+  const { weather } = useWeather(); // Get weather for outfit generation
   const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastGeneratedDate, setLastGeneratedDate] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export const useOutfitGenerator = (count: number = 10) => {
     setLoading(true);
     // Add slight delay for UX (feels more intentional)
     setTimeout(() => {
-      const generated = generateOutfits(wardrobe, profile, count);
+      const generated = generateOutfits(wardrobe, profile, count, weather ?? undefined);
       setOutfits(generated);
       const now = new Date().toISOString();
       setLastGeneratedDate(now);
@@ -91,7 +93,7 @@ export const useOutfitGenerator = (count: number = 10) => {
 
       setLoading(false);
     }, 500);
-  }, [wardrobe, profile, count]);
+  }, [wardrobe, profile, count, weather]);
 
   // Load cached outfits on mount
   useEffect(() => {

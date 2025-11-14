@@ -1,5 +1,3 @@
-import { WeatherData, StylePreference, AIClothingAnalysis } from './index';
-
 export interface APIResponse {
   success: boolean;
   error?: string;

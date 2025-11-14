@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, memo } from 'react';
 import { useStore } from '../../store/useStore';
-import { History, Calendar, Heart } from 'lucide-react';
+import { Calendar, Heart } from 'lucide-react';
 import type { Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
 
@@ -114,17 +114,7 @@ export const OutfitHistory = () => {
 
   if (outfitHistory.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <div className="p-6 text-white" style={{ background: 'linear-gradient(to right, #4b2e83, #7c3aed)' }}>
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-2">
-              <History className="w-6 h-6 text-white" />
-              <h1 className="text-2xl font-bold text-white">Outfit History</h1>
-            </div>
-          </div>
-        </div>
-
+      <div className="bg-gray-50 dark:bg-gray-900">
         {/* Empty State */}
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex flex-col items-center justify-center py-12">
@@ -141,64 +131,58 @@ export const OutfitHistory = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="p-6 text-white" style={{ background: 'linear-gradient(to right, #4b2e83, #7c3aed)' }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <History className="w-6 h-6 text-white" />
-              <h1 className="text-2xl font-bold text-white">Outfit History</h1>
-            </div>
-            <div className="text-sm bg-white/20 px-3 py-1 rounded-full text-white">
-              {filteredOutfits.length} {filteredOutfits.length === 1 ? 'outfit' : 'outfits'}
-            </div>
+    <div className="pb-20 bg-gray-50 dark:bg-gray-900">
+      {/* Controls */}
+      <div className="max-w-4xl mx-auto px-6 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm bg-uw-purple/10 dark:bg-purple-900/20 px-3 py-1.5 rounded-full text-uw-purple dark:text-purple-400 font-medium">
+            {filteredOutfits.length} {filteredOutfits.length === 1 ? 'outfit' : 'outfits'}
           </div>
+        </div>
 
-          {/* View Toggle & Filter */}
-          <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex gap-1 bg-white/10 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white text-uw-purple'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  viewMode === 'calendar'
-                    ? 'bg-white text-uw-purple'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                Calendar
-              </button>
-            </div>
-
-            {/* Filter Toggle */}
+        {/* View Toggle & Filter */}
+        <div className="flex items-center gap-3">
+          {/* View Mode Toggle */}
+          <div className="flex gap-1 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
             <button
-              onClick={() => setFilterLiked(!filterLiked)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterLiked
-                  ? 'bg-white text-uw-purple'
-                  : 'bg-white/10 text-white hover:bg-white/20'
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-600 text-uw-purple dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-uw-purple dark:hover:text-white'
               }`}
             >
-              <Heart className={`w-4 h-4 ${filterLiked ? 'fill-red-500 text-red-500' : ''}`} />
-              Liked Only
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-white dark:bg-gray-600 text-uw-purple dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-uw-purple dark:hover:text-white'
+              }`}
+            >
+              Calendar
             </button>
           </div>
+
+          {/* Filter Toggle */}
+          <button
+            onClick={() => setFilterLiked(!filterLiked)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filterLiked
+                ? 'bg-uw-purple text-white shadow-sm'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${filterLiked ? 'fill-white text-white' : ''}`} />
+            Liked Only
+          </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto px-6">
         {viewMode === 'list' ? (
           /* List View */
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { Settings, Moon, Sun, Palette, TrendingUp, Trash2, AlertCircle } from 'lucide-react';
+import { Moon, Sun, Palette, TrendingUp, Trash2, AlertCircle, Shirt, Briefcase, Zap, Activity, BookOpen, User } from 'lucide-react';
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import type { StylePreference } from '../../types';
+import type { LucideIcon } from 'lucide-react';
 
-const STYLE_OPTIONS: { key: StylePreference; label: string; icon: string }[] = [
-  { key: 'casual', label: 'Casual', icon: '👕' },
-  { key: 'formal', label: 'Formal', icon: '👔' },
-  { key: 'streetwear', label: 'Streetwear', icon: '🧥' },
-  { key: 'athletic', label: 'Athletic', icon: '⚽' },
-  { key: 'preppy', label: 'Preppy', icon: '🎓' },
+const STYLE_OPTIONS: { key: StylePreference; label: string; icon: LucideIcon }[] = [
+  { key: 'casual', label: 'Casual', icon: Shirt },
+  { key: 'formal', label: 'Formal', icon: Briefcase },
+  { key: 'streetwear', label: 'Streetwear', icon: Zap },
+  { key: 'athletic', label: 'Athletic', icon: Activity },
+  { key: 'preppy', label: 'Preppy', icon: BookOpen },
 ];
 
 const COLOR_OPTIONS = [
@@ -66,20 +68,68 @@ export const ProfileSettings = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="p-6 text-white" style={{ background: 'linear-gradient(to right, #4b2e83, #7c3aed)' }}>
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2">
-            <Settings className="w-6 h-6 text-white" />
-            <h1 className="text-2xl font-bold text-white">Settings</h1>
-          </div>
-          <p className="mt-1 text-white opacity-80">Customize your experience</p>
-        </div>
-      </div>
+    <div className="space-y-6">
+        {/* Account Authentication Section */}
+        <div className={`rounded-xl p-6 ${
+          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+        } shadow-md`}>
+          <SignedOut>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-uw-purple/10 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                <User className="w-5 h-5 text-uw-purple dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <h2 className={`text-lg font-semibold mb-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Account
+                </h2>
+                <p className={`text-sm mb-4 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Sign in to sync your wardrobe across devices and access from anywhere.
+                </p>
+                <div className="flex gap-3">
+                  <SignInButton mode="modal">
+                    <button className="px-4 py-2 bg-uw-purple hover:bg-uw-purple/90 text-white rounded-lg font-semibold transition-colors">
+                      Sign In
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className={`px-4 py-2 font-semibold rounded-lg transition-colors border-2 ${
+                      theme === 'dark'
+                        ? 'bg-gray-700 hover:bg-gray-600 text-purple-400 border-purple-400'
+                        : 'bg-white hover:bg-gray-50 text-uw-purple border-uw-purple'
+                    }`}>
+                      Sign Up
+                    </button>
+                  </SignUpButton>
+                </div>
+              </div>
+            </div>
+          </SignedOut>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto p-6 space-y-6">
+          <SignedIn>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <UserButton />
+              </div>
+              <div className="flex-1">
+                <h2 className={`text-lg font-semibold mb-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Account
+                </h2>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Your wardrobe is synced and accessible across all your devices.
+                </p>
+              </div>
+            </div>
+          </SignedIn>
+        </div>
+
         {/* Theme Toggle */}
         <div className={`rounded-xl p-6 ${
           theme === 'dark' ? 'bg-gray-800' : 'bg-white'
@@ -138,11 +188,13 @@ export const ProfileSettings = () => {
           </p>
 
           <div className="space-y-4">
-            {STYLE_OPTIONS.map(({ key, label, icon }) => (
+            {STYLE_OPTIONS.map(({ key, label, icon: Icon }) => (
               <div key={key}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{icon}</span>
+                    <Icon className={`w-5 h-5 ${
+                      theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                    }`} />
                     <span className={`font-medium ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
                     }`}>
@@ -233,7 +285,7 @@ export const ProfileSettings = () => {
         </button>
 
         {/* Danger Zone */}
-        <div className={`rounded-xl p-6 ${
+        <div className={`rounded-xl p-4 ${
           theme === 'dark' ? 'bg-red-900/20 border border-red-900/50' : 'bg-red-50 border border-red-200'
         }`}>
           <div className="flex items-center gap-2 mb-3">
@@ -253,9 +305,9 @@ export const ProfileSettings = () => {
           {!showResetConfirm ? (
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+              className="w-full py-3 flex items-center justify-center gap-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-5 h-5" />
               Reset App
             </button>
           ) : (
@@ -268,13 +320,13 @@ export const ProfileSettings = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleReset}
-                  className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Yes, Reset Everything
                 </button>
                 <button
                   onClick={() => setShowResetConfirm(false)}
-                  className={`px-4 py-2 font-medium rounded-lg transition-colors ${
+                  className={`flex-1 py-3 font-semibold rounded-lg transition-colors ${
                     theme === 'dark'
                       ? 'bg-gray-700 text-white hover:bg-gray-600'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -286,7 +338,6 @@ export const ProfileSettings = () => {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };
