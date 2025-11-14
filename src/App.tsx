@@ -128,84 +128,86 @@ function App() {
 
   // Bottom Navigation Component - Minimal Style
   const BottomNav = () => (
-    <nav className="fixed bottom-0 left-0 right-0 bg-transparent z-50">
-      <div className="flex justify-center items-center gap-6 h-20 pb-4">
-        <button
-          onClick={() => setCurrentView('todaysPick')}
-          className={`relative flex flex-col items-center transition-all ${
-            currentView === 'todaysPick' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <Sparkles className="w-7 h-7" />
-          {currentView === 'todaysPick' && (
-            <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
-          )}
-        </button>
+    <nav className="fixed bottom-0 left-0 right-0 bg-transparent z-50 flex justify-center pb-4">
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-full px-6 py-3 shadow-lg">
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => setCurrentView('todaysPick')}
+            className={`relative flex flex-col items-center transition-all ${
+              currentView === 'todaysPick' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <Sparkles className="w-7 h-7" />
+            {currentView === 'todaysPick' && (
+              <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
+            )}
+          </button>
 
-        <button
-          onClick={() => setCurrentView('aiGenerator')}
-          className={`relative flex flex-col items-center transition-all ${
-            currentView === 'aiGenerator' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <Wand2 className="w-7 h-7" />
-          {currentView === 'aiGenerator' && (
-            <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
-          )}
-        </button>
+          <button
+            onClick={() => setCurrentView('aiGenerator')}
+            className={`relative flex flex-col items-center transition-all ${
+              currentView === 'aiGenerator' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <Wand2 className="w-7 h-7" />
+            {currentView === 'aiGenerator' && (
+              <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
+            )}
+          </button>
 
-        <button
-          onClick={() => setCurrentView('wardrobe')}
-          className={`relative flex flex-col items-center transition-all ${
-            currentView === 'wardrobe' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <Shirt className="w-7 h-7" />
-          {currentView === 'wardrobe' && (
-            <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
-          )}
-        </button>
+          <button
+            onClick={() => setCurrentView('wardrobe')}
+            className={`relative flex flex-col items-center transition-all ${
+              currentView === 'wardrobe' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <Shirt className="w-7 h-7" />
+            {currentView === 'wardrobe' && (
+              <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
+            )}
+          </button>
 
-        <button
-          onClick={() => wardrobeStats.canSwipe && setCurrentView('swipe')}
-          disabled={!wardrobeStats.canSwipe}
-          className={`relative flex flex-col items-center transition-all ${
-            currentView === 'swipe'
-              ? 'text-uw-purple scale-110'
-              : wardrobeStats.canSwipe
-              ? 'text-gray-400 hover:text-gray-600'
-              : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-          }`}
-        >
-          <Home className="w-7 h-7" />
-          {currentView === 'swipe' && (
-            <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
-          )}
-        </button>
+          <button
+            onClick={() => wardrobeStats.canSwipe && setCurrentView('swipe')}
+            disabled={!wardrobeStats.canSwipe}
+            className={`relative flex flex-col items-center transition-all ${
+              currentView === 'swipe'
+                ? 'text-uw-purple scale-110'
+                : wardrobeStats.canSwipe
+                ? 'text-gray-400 hover:text-gray-600'
+                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+            }`}
+          >
+            <Home className="w-7 h-7" />
+            {currentView === 'swipe' && (
+              <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
+            )}
+          </button>
 
-        <button
-          onClick={() => setCurrentView('history')}
-          className={`relative flex flex-col items-center transition-all ${
-            currentView === 'history' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <History className="w-7 h-7" />
-          {currentView === 'history' && (
-            <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
-          )}
-        </button>
+          <button
+            onClick={() => setCurrentView('history')}
+            className={`relative flex flex-col items-center transition-all ${
+              currentView === 'history' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <History className="w-7 h-7" />
+            {currentView === 'history' && (
+              <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
+            )}
+          </button>
 
-        <button
-          onClick={() => setCurrentView('settings')}
-          className={`relative flex flex-col items-center transition-all ${
-            currentView === 'settings' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <Settings className="w-7 h-7" />
-          {currentView === 'settings' && (
-            <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
-          )}
-        </button>
+          <button
+            onClick={() => setCurrentView('settings')}
+            className={`relative flex flex-col items-center transition-all ${
+              currentView === 'settings' ? 'text-uw-purple scale-110' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <Settings className="w-7 h-7" />
+            {currentView === 'settings' && (
+              <div className="absolute -bottom-2 w-1 h-1 bg-uw-purple rounded-full"></div>
+            )}
+          </button>
+        </div>
       </div>
     </nav>
   );
