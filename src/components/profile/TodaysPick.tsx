@@ -129,21 +129,83 @@ export const TodaysPick = () => {
         <div className="rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-gray-800">
           {/* Outfit Items Grid */}
           <div className="p-6">
-            <div className="grid grid-cols-1 gap-4 mb-6">
-              {todaysPick.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
-                >
-                  <TodayPickItemImage itemId={item.id} category={item.category} />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <span className="text-white font-semibold capitalize">
-                      {item.category}
-                    </span>
+            {/* Tops and Outerwear */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {todaysPick.items
+                .filter(item => ['top', 'outerwear'].includes(item.category.toLowerCase()))
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
+                  >
+                    <TodayPickItemImage itemId={item.id} category={item.category} />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                      <span className="text-white font-semibold capitalize">
+                        {item.category}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
+
+            {/* Bottoms */}
+            <div className="mb-6">
+              {todaysPick.items
+                .filter(item => ['pants', 'shorts', 'skirt', 'bottom'].includes(item.category.toLowerCase()))
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
+                  >
+                    <TodayPickItemImage itemId={item.id} category={item.category} />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                      <span className="text-white font-semibold capitalize">
+                        {item.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Shoes */}
+            <div className="mb-6">
+              {todaysPick.items
+                .filter(item => ['shoes', 'boots', 'sneakers'].includes(item.category.toLowerCase()))
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
+                  >
+                    <TodayPickItemImage itemId={item.id} category={item.category} />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                      <span className="text-white font-semibold capitalize">
+                        {item.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Accessories (if any) */}
+            {todaysPick.items.some(item => !['top', 'outerwear', 'pants', 'shorts', 'skirt', 'bottom', 'shoes', 'boots', 'sneakers'].includes(item.category.toLowerCase())) && (
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {todaysPick.items
+                  .filter(item => !['top', 'outerwear', 'pants', 'shorts', 'skirt', 'bottom', 'shoes', 'boots', 'sneakers'].includes(item.category.toLowerCase()))
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
+                    >
+                      <TodayPickItemImage itemId={item.id} category={item.category} />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                        <span className="text-white font-semibold capitalize">
+                          {item.category}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="space-y-3">

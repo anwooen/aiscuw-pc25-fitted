@@ -17,7 +17,7 @@ export const WardrobeUpload = () => {
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(false);
+  const [useAI, setUseAI] = useState(true); // Enable AI analysis by default
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIClothingAnalysis | null>(null);
   const [batchMode, setBatchMode] = useState(false);
