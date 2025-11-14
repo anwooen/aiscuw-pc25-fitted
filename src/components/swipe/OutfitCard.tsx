@@ -55,15 +55,17 @@ export const OutfitCard = memo(({ outfit }: OutfitCardProps) => {
       <Card3D depth="deep" className="w-full h-full">
         <div className="w-full h-full bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
           <div className="h-full flex flex-col">
-            {/* Outfit Items Grid */}
-            <div className="flex-1 p-6 grid grid-cols-2 gap-4 overflow-y-auto">
+            {/* Outfit Items Column */}
+            <div className="flex-1 p-6 flex flex-col justify-center gap-4 overflow-y-auto">
               {outfit.items.map((item) => (
-                <div key={item.id} className="relative group">
-                  <OutfitItemImage itemId={item.id} category={item.category} />
-                  <div className="mt-2 text-center">
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
-                      {item.category}
-                    </span>
+                <div key={item.id} className="relative group flex-shrink-0">
+                  <div className="w-full max-w-xs mx-auto">
+                    <OutfitItemImage itemId={item.id} category={item.category} />
+                    <div className="mt-2 text-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
+                        {item.category}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

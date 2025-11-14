@@ -248,7 +248,8 @@ export const generateOutfits = (
   wardrobe: ClothingItem[],
   profile: UserProfile,
   count: number = 10,
-  weather?: WeatherData
+  weather?: WeatherData,
+  requiredItem?: ClothingItem
 ): Outfit[] => {
   // Separate items by category
   const tops = wardrobe.filter((item) => item.category === 'top');
@@ -261,6 +262,11 @@ export const generateOutfits = (
   if (tops.length === 0 || bottoms.length === 0 || shoes.length === 0) {
     return [];
   }
+
+  // If there's a required item, filter the appropriate category
+  const filteredTops = requiredItem?.category === 'top' ? [requiredItem] : tops;
+  const filteredBottoms = requiredItem?.category === 'bottom' ? [requiredItem] : bottoms;
+  const filteredShoes = requiredItem?.category === 'shoes' ? [requiredItem] : shoes;
 
   const outfitCandidates: { items: ClothingItem[]; score: number }[] = [];
 
@@ -276,9 +282,9 @@ export const generateOutfits = (
     const usedCombinations = new Set<string>();
 
     for (let i = 0; i < attempts && outfitCandidates.length < count * 2; i++) {
-      const top = tops[Math.floor(Math.random() * tops.length)];
-      const bottom = bottoms[Math.floor(Math.random() * bottoms.length)];
-      const shoe = shoes[Math.floor(Math.random() * shoes.length)];
+      const top = filteredTops[Math.floor(Math.random() * filteredTops.length)];
+      const bottom = filteredBottoms[Math.floor(Math.random() * filteredBottoms.length)];
+      const shoe = filteredShoes[Math.floor(Math.random() * filteredShoes.length)];
 
       const comboKey = `${top.id}-${bottom.id}-${shoe.id}`;
       if (usedCombinations.has(comboKey)) continue;
@@ -307,9 +313,9 @@ export const generateOutfits = (
     }
   } else {
     // Generate all combinations for smaller wardrobes
-    for (const top of tops) {
-      for (const bottom of bottoms) {
-        for (const shoe of shoes) {
+    for (const top of filteredTops) {
+      for (const bottom of filteredBottoms) {
+        for (const shoe of filteredShoes) {
           const items: ClothingItem[] = [top, bottom, shoe];
 
           // Optionally add outerwear (50% chance if available)

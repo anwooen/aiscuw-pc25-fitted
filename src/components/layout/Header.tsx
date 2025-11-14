@@ -8,7 +8,7 @@ interface HeaderProps {
 
 export const Header = ({ title, subtitle, leftContent, rightContent, centered = false }: HeaderProps) => {
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-sm border-b border-gray-200/50 dark:border-gray-700/50">
       <div className="container mx-auto px-4 py-4">
         {centered ? (
           <div className="flex items-center justify-center">

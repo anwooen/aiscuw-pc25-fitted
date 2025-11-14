@@ -1,4 +1,4 @@
-gitimport { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -165,9 +165,9 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-6 overflow-x-hidden">
+    <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden">
       {/* Weather Widget - Visible and centered above card */}
-      <div className="mb-4">
+      <div className="mb-3">
         <WeatherWidget weather={weather} loading={weatherLoading} error={weatherError} onRequestWeather={fetchWeather} />
       </div>
 
@@ -187,7 +187,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       )}
 
       {/* Card Stack */}
-      <div className="relative h-[360px] mb-6">
+      <div className="relative flex-1 mb-4">
         {/* Next card preview */}
         {dailySuggestions[currentIndex + 1] && (
           <div className="absolute inset-0 opacity-50 scale-95">
@@ -239,7 +239,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       </div>
 
       {/* Swipe Controls */}
-      <div className="mb-6">
+      <div className="flex-shrink-0 pb-2">
         <SwipeControls
           onDislike={handleDislike}
           onLike={handleLike}
@@ -248,7 +248,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
       </div>
 
       {/* Progress indicator */}
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400 pb-2">
+      <div className="text-center text-sm text-gray-500 dark:text-gray-400 pb-4">
         {currentIndex + 1} / {dailySuggestions.length}
       </div>
     </div>
