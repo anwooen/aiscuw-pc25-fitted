@@ -24,6 +24,7 @@ export const useStore = create<AppState>()(
       todaysPick: null,
       dailySuggestions: [],
       theme: 'light',
+      clerkUserId: null, // Phase 14: Clerk Authentication
 
       setProfile: (profile: UserProfile) => set({ profile }),
 
@@ -154,6 +155,9 @@ export const useStore = create<AppState>()(
             completedAt: undefined,
           },
         })),
+
+      // Phase 14: Clerk Authentication Actions
+      setClerkUserId: (userId: string | null) => set({ clerkUserId: userId }),
     }),
     {
       name: 'fitted-storage', // localStorage key

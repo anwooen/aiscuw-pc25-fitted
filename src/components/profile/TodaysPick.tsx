@@ -50,7 +50,7 @@ const TodayPickItemImage = memo(({ itemId, category }: { itemId: string; categor
 TodayPickItemImage.displayName = 'TodayPickItemImage';
 
 export const TodaysPick = () => {
-  const { todaysPick, setTodaysPick, wardrobe } = useStore();
+  const { todaysPick, setTodaysPick, wardrobe, outfitHistory } = useStore();
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Weather data for context
@@ -59,8 +59,34 @@ export const TodaysPick = () => {
   const canSwipe = meetsMinimumRequirements(wardrobe);
 
   const handleReSwipe = () => {
-    setTodaysPick(null);
-    // Redirect to swipe interface will be handled by parent component
+    // DEBUG: Log current state
+    console.log('=== HANDLE RE-SWIPE DEBUG ===');
+    console.log('Total outfits in history:', outfitHistory.length);
+    console.log('Current todaysPick ID:', todaysPick?.id);
+
+    // Get all liked outfits from history
+    const likedOutfits = outfitHistory.filter(outfit => outfit.liked === true);
+    console.log('Liked outfits count:', likedOutfits.length);
+    console.log('Liked outfit IDs:', likedOutfits.map(o => o.id));
+
+    // Filter out the current outfit
+    const otherLikedOutfits = likedOutfits.filter(
+      outfit => outfit.id !== todaysPick?.id
+    );
+    console.log('Other liked outfits (excluding current):', otherLikedOutfits.length);
+    console.log('Other liked outfit IDs:', otherLikedOutfits.map(o => o.id));
+
+    // If there are other liked outfits, pick a random one
+    if (otherLikedOutfits.length > 0) {
+      const randomIndex = Math.floor(Math.random() * otherLikedOutfits.length);
+      const newPick = otherLikedOutfits[randomIndex];
+      console.log('Selected new pick with ID:', newPick.id);
+      setTodaysPick(newPick);
+    } else {
+      console.log('No other liked outfits, clearing pick');
+      // Fall back to clearing (redirect to swipe)
+      setTodaysPick(null);
+    }
   };
 
   if (!todaysPick) {
@@ -117,20 +143,9 @@ export const TodaysPick = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="p-6 text-white" style={{ background: 'linear-gradient(to right, #4b2e83, #7c3aed)' }}>
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-6 h-6 text-white" />
-            <h1 className="text-2xl font-bold text-white">Today's Pick</h1>
-          </div>
-          <p className="text-white opacity-80">Your selected outfit for today</p>
-        </div>
-      </div>
-
+    <div className="pb-20 bg-gray-50 dark:bg-gray-900">
       {/* Weather Widget */}
-      <div className="max-w-2xl mx-auto px-6 -mt-3 mb-3">
+      <div className="max-w-2xl mx-auto px-6 pt-6 mb-3">
         <WeatherWidget weather={weather} loading={weatherLoading} error={weatherError} onRequestWeather={fetchWeather} />
         {weather && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">

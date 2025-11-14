@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (Clerk keys, API secrets)
+.env
+.env.local
+.env*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -23,24 +28,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Claude documentation (working file only, not the docs/ folder)
-claude.md
-CLAUDE_CONDENSED.md
-claude_full.md
-claude_weaknesses.md
-elite-mode.md
-old_claude.md
-README.md 
-old-claude.md
-welcome-black-screen.md
-phase01-07.md
-phase09.md
-phase10.md
-phase12.md
-phase11.md
-phase13.md
-phase14.md
-dev_shortcuts.md
+*.md
+CLAUDE.md
 
 
 # Vercel

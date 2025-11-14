@@ -124,6 +124,9 @@ export interface AppState {
   dailySuggestions: Outfit[];
   theme: 'light' | 'dark';
 
+  // Phase 14: Clerk Authentication
+  clerkUserId: string | null;
+
   // Actions
   setProfile: (profile: UserProfile) => void;
   completeOnboarding: (stylePreferences: Record<StylePreference, number>, favoriteColors: string[]) => void;
@@ -137,6 +140,9 @@ export interface AppState {
   resetApp: () => void;
   removeDuplicateOutfits: () => void;
   resetOnboarding: () => void;
+
+  // Phase 14: Clerk Authentication Actions
+  setClerkUserId: (userId: string | null) => void;
 }
 
 // Minimum requirements for unlocking swipe mode
