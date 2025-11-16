@@ -203,23 +203,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Sort outfits by score (highest first)
     const sortedOutfits = result.outfits.sort((a: OutfitSuggestion, b: OutfitSuggestion) => b.score - a.score);
 
-    // Return the recommendations
-    return res.status(200).json({
+    // Return the recommendations with proper typing
+    const response: APIResponseType<{ outfits: OutfitSuggestion[] }> = {
       success: true,
       outfits: sortedOutfits.slice(0, count), // Limit to requested count
-    });
+    };
+
+    return res.status(200).json(response);
 
   } catch (error: unknown) {
     console.error('Error generating outfit recommendations:', error);
-
-    interface ErrorWithStatus {
-      status: number;
-      message?: string;
-    }
-
-    interface ErrorWithMessage {
-      message: string;
-    }
 
     const errorResponse = (status: number, message: string): VercelResponse => {
       return res.status(status).json({
@@ -228,24 +221,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } as RecommendOutfitsResponse);
     };
 
-    // Handle OpenAI API errors
-    if (error && typeof error === 'object') {
-      // Check for API authentication and rate limit errors
-      if ('status' in error && typeof (error as ErrorWithStatus).status === 'number') {
-        const statusError = error as ErrorWithStatus;
-        if (statusError.status === 401) {
-          return errorResponse(500, 'API authentication failed. Please check server configuration.');
-        }
-        if (statusError.status === 429) {
-          return errorResponse(429, 'Rate limit exceeded. Please try again later.');
-        }
+    // Handle OpenAI API errors using the proper OpenAIError type
+    if (error && typeof error === 'object' && 'status' in error && 'message' in error) {
+      const openAIError = error as OpenAIError;
+
+      // Check for API authentication errors
+      if (openAIError.status === 401) {
+        return errorResponse(500, 'API authentication failed. Please check server configuration.');
       }
 
-      // Handle errors with message property
-      if ('message' in error && typeof (error as ErrorWithMessage).message === 'string') {
-        const messageError = error as ErrorWithMessage;
-        return errorResponse(500, messageError.message);
+      // Check for rate limit errors
+      if (openAIError.status === 429) {
+        return errorResponse(429, 'Rate limit exceeded. Please try again later.');
       }
+
+      // Return the specific error message from OpenAI
+      return errorResponse(500, openAIError.message);
+    }
+
+    // Handle generic errors with message property
+    if (error && typeof error === 'object' && 'message' in error) {
+      const messageError = error as { message: string };
+      return errorResponse(500, messageError.message);
     }
 
     // Default error response for unknown errors
