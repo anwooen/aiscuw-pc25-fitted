@@ -12,9 +12,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 /**
  * Analyze a clothing item using GPT-4o Vision API
  * Cost: ~$0.001 per image (with compression)
+ *
+ * @param request - The analysis request with image and preferences
+ * @param signal - Optional AbortSignal for request cancellation
  */
 export async function analyzeClothing(
-  request: AnalyzeClothingRequest
+  request: AnalyzeClothingRequest,
+  signal?: AbortSignal
 ): Promise<AnalyzeClothingResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/analyze-clothing`, {
@@ -23,6 +27,7 @@ export async function analyzeClothing(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
+      signal, // Support request cancellation
     });
 
     if (!response.ok) {
@@ -33,6 +38,14 @@ export async function analyzeClothing(
     const data: AnalyzeClothingResponse = await response.json();
     return data;
   } catch (error: any) {
+    // Don't log AbortErrors - these are intentional cancellations
+    if (error.name === 'AbortError') {
+      return {
+        success: false,
+        error: 'Request cancelled',
+      };
+    }
+
     console.error('Error analyzing clothing:', error);
     return {
       success: false,

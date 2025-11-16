@@ -124,36 +124,30 @@ export const WardrobeUpload = () => {
     abortControllerRef.current = abortController;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/analyze-clothing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Use the API wrapper with abort support (DRY principle)
+      const data = await analyzeClothing(
+        {
           image: base64Image,
           userPreferences: profile.stylePreferences,
-        }),
-        signal: abortController.signal,
-      });
+        },
+        abortController.signal
+      );
 
       // Check if operation was cancelled
       if (operationIdRef.current !== opId) return;
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
 
       if (data.success && data.analysis) {
         setAiAnalysis(data.analysis);
         // Auto-select the suggested category (user can still override)
         setSelectedCategory(data.analysis.suggestedCategory || null);
       } else {
-        setError(data.error || 'Failed to analyze image with AI');
+        // Don't show error for cancelled requests
+        if (data.error !== 'Request cancelled') {
+          setError(data.error || 'Failed to analyze image with AI');
+        }
       }
     } catch (err: any) {
-      // Ignore abort errors (user cancelled)
-      if (err.name === 'AbortError') return;
-      
+      // Unexpected errors (wrapper handles AbortError gracefully)
       console.error('AI analysis error:', err);
       if (operationIdRef.current === opId) {
         setError('AI analysis failed. You can still add the item manually.');

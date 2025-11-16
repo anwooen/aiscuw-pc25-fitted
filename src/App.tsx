@@ -15,11 +15,10 @@ const SwipeInterface = lazy(() => import('./components/swipe/SwipeInterface').th
 const TodaysPick = lazy(() => import('./components/profile/TodaysPick').then(m => ({ default: m.TodaysPick })));
 const OutfitHistory = lazy(() => import('./components/profile/OutfitHistory').then(m => ({ default: m.OutfitHistory })));
 const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings').then(m => ({ default: m.ProfileSettings })));
-const UIDesignDemo = lazy(() => import('./components/demo/UIDesignDemo').then(m => ({ default: m.UIDesignDemo })));
 const AIOutfitGenerator = lazy(() => import('./components/outfits/AIOutfitGenerator').then(m => ({ default: m.AIOutfitGenerator })));
 
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
-type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'demo' | 'aiGenerator';
+type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'aiGenerator';
 
 // Loading fallback component``
 const LoadingFallback = () => (
@@ -243,14 +242,6 @@ function App() {
     );
   }
 
-  if (currentView === 'demo') {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <UIDesignDemo />
-      </Suspense>
-    );
-  }
-
   if (currentView === 'aiGenerator') {
     return (
       <>
@@ -273,30 +264,6 @@ function App() {
           <Header title="Settings" centered />
 
           <div className="max-w-2xl mx-auto p-6 space-y-6">
-            {/* UI Design Demo Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    UI Design Demo
-                  </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Explore different navigation and header designs. Try out 6 navigation styles and 6 header styles!
-                  </p>
-                  <button
-                    onClick={() => setCurrentView('demo')}
-                    className="w-full py-4 flex items-center justify-center gap-2 bg-gradient-to-r from-uw-purple to-purple-600 hover:from-purple-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    View UI Demo
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Reset Onboarding Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <div className="flex items-start gap-4">

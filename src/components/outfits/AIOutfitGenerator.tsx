@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, X, Search, Calendar, Clock, MapPin, Loader2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { WardrobeItem, Outfit } from '../../types';
+import { ClothingItem, Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
 import { generateOutfits } from '../../utils/outfitGenerator';
 
-type GenerationType = 'occasion' | 'item' | 'freeform';
+type GenerationType = 'occasion' | 'item' | 'freeform' | 'time' | 'location';
 
 export function AIOutfitGenerator() {
   const { wardrobe, profile, addOutfit } = useStore();
   const [generationType, setGenerationType] = useState<GenerationType>('occasion');
-  const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const [prompt, setPrompt] = useState('');
   const [occasion, setOccasion] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedOutfits, setGeneratedOutfits] = useState<Outfit[]>([]);
   const [showItemPicker, setShowItemPicker] = useState(false);
@@ -30,6 +32,24 @@ export function AIOutfitGenerator() {
     'Brunch',
   ];
 
+  const timeSlots = [
+    'Early Morning (6-9 AM)',
+    'Late Morning (9 AM-12 PM)',
+    'Afternoon (12-5 PM)',
+    'Evening (5-9 PM)',
+    'Night (9 PM+)',
+  ];
+
+  const locations = [
+    'Campus/Classes',
+    'Library/Study',
+    'Gym/IMA',
+    'Downtown Seattle',
+    'Coffee Shop',
+    'Party',
+    'Date/Restaurant',
+  ];
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedOutfits([]);
@@ -43,6 +63,14 @@ export function AIOutfitGenerator() {
       if (generationType === 'item' && selectedItem) {
         // Generate outfits that include the selected item
         outfits = generateOutfits(wardrobe, profile, 5, undefined, selectedItem);
+      } else if (generationType === 'time') {
+        // Time-based generation (context logged for future AI integration)
+        console.log(`Generating outfit for: ${selectedTime}`);
+        outfits = generateOutfits(wardrobe, profile, 5);
+      } else if (generationType === 'location') {
+        // Location-based generation (context logged for future AI integration)
+        console.log(`Generating outfit for: ${selectedLocation}`);
+        outfits = generateOutfits(wardrobe, profile, 5);
       } else {
         // Generate outfits based on occasion or prompt
         outfits = generateOutfits(wardrobe, profile, 5);
@@ -83,12 +111,14 @@ export function AIOutfitGenerator() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             How would you like to generate?
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             <button
               onClick={() => {
                 setGenerationType('occasion');
                 setSelectedItem(null);
                 setPrompt('');
+                setSelectedTime('');
+                setSelectedLocation('');
               }}
               className={`p-4 rounded-xl border-2 transition-all ${
                 generationType === 'occasion'
@@ -107,6 +137,8 @@ export function AIOutfitGenerator() {
                 setGenerationType('item');
                 setOccasion('');
                 setPrompt('');
+                setSelectedTime('');
+                setSelectedLocation('');
               }}
               className={`p-4 rounded-xl border-2 transition-all ${
                 generationType === 'item'
@@ -125,6 +157,8 @@ export function AIOutfitGenerator() {
                 setGenerationType('freeform');
                 setSelectedItem(null);
                 setOccasion('');
+                setSelectedTime('');
+                setSelectedLocation('');
               }}
               className={`p-4 rounded-xl border-2 transition-all ${
                 generationType === 'freeform'
@@ -135,6 +169,46 @@ export function AIOutfitGenerator() {
               <Sparkles className="w-6 h-6 mx-auto mb-2 text-uw-purple" />
               <div className="text-sm font-medium text-gray-900 dark:text-white">
                 Custom
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setGenerationType('time');
+                setSelectedItem(null);
+                setOccasion('');
+                setPrompt('');
+                setSelectedLocation('');
+              }}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                generationType === 'time'
+                  ? 'border-uw-purple bg-purple-50 dark:bg-purple-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-uw-purple'
+              }`}
+            >
+              <Clock className="w-6 h-6 mx-auto mb-2 text-uw-purple" />
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                Time
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setGenerationType('location');
+                setSelectedItem(null);
+                setOccasion('');
+                setPrompt('');
+                setSelectedTime('');
+              }}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                generationType === 'location'
+                  ? 'border-uw-purple bg-purple-50 dark:bg-purple-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-uw-purple'
+              }`}
+            >
+              <MapPin className="w-6 h-6 mx-auto mb-2 text-uw-purple" />
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                Location
               </div>
             </button>
           </div>
@@ -209,6 +283,56 @@ export function AIOutfitGenerator() {
           </div>
         )}
 
+        {/* Time Selector */}
+        {generationType === 'time' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Select Time of Day
+            </h3>
+            <div className="space-y-3">
+              {timeSlots.map((slot) => (
+                <button
+                  key={slot}
+                  onClick={() => setSelectedTime(slot)}
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                    selectedTime === slot
+                      ? 'border-uw-purple bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-uw-purple'
+                  }`}
+                >
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {slot}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Location Selector */}
+        {generationType === 'location' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Where are you going?
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {locations.map((loc) => (
+                <button
+                  key={loc}
+                  onClick={() => setSelectedLocation(loc)}
+                  className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                    selectedLocation === loc
+                      ? 'border-uw-purple bg-purple-50 dark:bg-purple-900/20 text-uw-purple'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-uw-purple'
+                  }`}
+                >
+                  {loc}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Generate Button */}
         <button
           onClick={handleGenerate}
@@ -216,7 +340,9 @@ export function AIOutfitGenerator() {
             isGenerating ||
             (generationType === 'occasion' && !occasion) ||
             (generationType === 'item' && !selectedItem) ||
-            (generationType === 'freeform' && !prompt.trim())
+            (generationType === 'freeform' && !prompt.trim()) ||
+            (generationType === 'time' && !selectedTime) ||
+            (generationType === 'location' && !selectedLocation)
           }
           className="w-full py-4 bg-gradient-to-r from-uw-purple to-purple-600 text-white rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >
@@ -269,7 +395,7 @@ export function AIOutfitGenerator() {
 }
 
 // Item Preview Component
-function ItemPreview({ item }: { item: WardrobeItem }) {
+function ItemPreview({ item }: { item: ClothingItem }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -328,7 +454,7 @@ function OutfitPreview({ outfit, index, onSave }: { outfit: Outfit; index: numbe
 }
 
 // Outfit Item Preview Component
-function OutfitItemPreview({ item }: { item: WardrobeItem }) {
+function OutfitItemPreview({ item }: { item: ClothingItem }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -363,8 +489,8 @@ function ItemPickerModal({
   onSelect,
   onClose,
 }: {
-  wardrobe: WardrobeItem[];
-  onSelect: (item: WardrobeItem) => void;
+  wardrobe: ClothingItem[];
+  onSelect: (item: ClothingItem) => void;
   onClose: () => void;
 }) {
   return (
@@ -394,7 +520,7 @@ function ItemPickerModal({
 }
 
 // Item Picker Card Component
-function ItemPickerCard({ item, onSelect }: { item: WardrobeItem; onSelect: () => void }) {
+function ItemPickerCard({ item, onSelect }: { item: ClothingItem; onSelect: () => void }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
