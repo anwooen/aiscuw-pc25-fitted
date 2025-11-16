@@ -107,8 +107,8 @@ function App() {
     }
   }
 
-  // Show loading state while generating outfits
-  if (loading && wardrobeStats.canSwipe) {
+  // Show loading state while generating outfits (only when navigating to swipe view)
+  if (loading && wardrobeStats.canSwipe && currentView === 'swipe') {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
