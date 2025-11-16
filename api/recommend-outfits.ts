@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { RecommendOutfitsRequest, RecommendOutfitsResponse } from '../src/types';
-import { OpenAIError, APIResponseType, OutfitSuggestion } from '../src/types/api';
+import { OutfitSuggestion } from '../src/types/api';
 import { OpenAIService } from '../src/services/openai';
 import { PromptBuilder } from '../src/services/promptBuilder';
 import { Logger } from '../src/services/logger';

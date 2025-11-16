@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { ClothingCategory, AIClothingAnalysis } from '../types';
 import { convertImageIfNeeded } from '../utils/imageFormatConverter';
 import { processImageForAI } from '../utils/backgroundRemoval';
-import { compressImage, extractColors } from '../utils/imageCompression';
+import { compressImage, extractColors, compressForAI } from '../utils/imageCompression';
 import { saveImage } from '../utils/storage';
 import { useStore } from '../store/useStore';
 import { analyzeClothing } from '../services/api';
@@ -169,8 +169,17 @@ export const useBatchAnalysis = (): UseBatchAnalysisReturn => {
 
         try {
           aiStatus = 'analyzing';
+
+          // Convert processed blob to File for compression
+          const processedFile = new File([processedBlob], file.name, {
+            type: processedBlob.type || 'image/jpeg'
+          });
+
+          // Compress image for AI to avoid HTTP 413 errors
+          const compressedBase64 = await compressForAI(processedFile);
+
           const aiResult = await analyzeClothing({
-            image: base64,
+            image: compressedBase64, // Use compressed version for AI
             userPreferences: profile.stylePreferences,
           });
 
