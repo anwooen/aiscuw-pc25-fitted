@@ -4,31 +4,124 @@ import type { ClothingItem, Outfit, UserProfile, StylePreference, WeatherData } 
 // Each color maps to colors it pairs well with
 const COLOR_COMPATIBILITY: Record<string, string[]> = {
   // Neutrals go with everything
-  black: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange'],
-  white: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange'],
-  gray: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange'],
-  grey: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange'],
-  beige: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'blue', 'green', 'pink', 'red'],
-  brown: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'green', 'orange', 'yellow', 'red'],
+  black: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange', 'tan', 'khaki', 'cream', 'olive', 'maroon', 'burgundy'],
+  white: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange', 'tan', 'khaki', 'cream', 'olive', 'maroon', 'burgundy'],
+  gray: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange', 'tan', 'khaki', 'cream', 'olive', 'maroon', 'burgundy'],
+  grey: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'blue', 'green', 'purple', 'pink', 'yellow', 'orange', 'tan', 'khaki', 'cream', 'olive', 'maroon', 'burgundy'],
+  beige: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'blue', 'green', 'pink', 'red', 'tan', 'khaki', 'cream', 'olive'],
+  brown: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'green', 'orange', 'yellow', 'red', 'tan', 'khaki', 'cream', 'olive'],
+  tan: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'blue', 'green', 'red', 'tan', 'khaki', 'cream', 'olive'],
+  khaki: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'blue', 'green', 'red', 'tan', 'khaki', 'cream', 'olive'],
+  cream: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'blue', 'green', 'pink', 'red', 'tan', 'khaki', 'cream'],
 
-  // Navy is versatile
-  navy: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'pink', 'yellow', 'orange', 'green'],
+  // Navy is versatile (acts like a neutral)
+  navy: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'pink', 'yellow', 'orange', 'green', 'tan', 'khaki', 'cream', 'burgundy'],
 
-  // Primary colors
-  red: ['black', 'white', 'gray', 'grey', 'navy', 'beige', 'blue', 'pink'],
-  blue: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'yellow', 'orange', 'pink', 'green'],
-  yellow: ['black', 'white', 'gray', 'grey', 'navy', 'brown', 'blue', 'purple', 'green'],
+  // Primary colors (limited pairings to avoid clashing)
+  red: ['black', 'white', 'gray', 'grey', 'navy', 'beige', 'blue', 'pink', 'tan', 'khaki', 'cream'],
+  blue: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'red', 'pink', 'green', 'tan', 'khaki', 'cream'],
+  yellow: ['black', 'white', 'gray', 'grey', 'navy', 'brown', 'blue', 'purple', 'tan', 'khaki'],
 
   // Secondary colors
-  green: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'yellow', 'orange', 'blue'],
-  purple: ['black', 'white', 'gray', 'grey', 'yellow', 'pink', 'navy'],
-  orange: ['black', 'white', 'gray', 'grey', 'navy', 'brown', 'blue', 'green'],
-  pink: ['black', 'white', 'gray', 'grey', 'beige', 'navy', 'blue', 'purple', 'red'],
+  green: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'blue', 'tan', 'khaki', 'cream', 'olive'],
+  purple: ['black', 'white', 'gray', 'grey', 'pink', 'navy', 'cream'],
+  orange: ['black', 'white', 'gray', 'grey', 'navy', 'brown', 'blue', 'tan', 'khaki', 'cream'],
+  pink: ['black', 'white', 'gray', 'grey', 'beige', 'navy', 'blue', 'purple', 'red', 'cream'],
+
+  // Earth tones
+  olive: ['black', 'white', 'gray', 'grey', 'beige', 'brown', 'navy', 'tan', 'khaki', 'cream', 'green'],
+  burgundy: ['black', 'white', 'gray', 'grey', 'beige', 'navy', 'tan', 'khaki', 'cream'],
+  maroon: ['black', 'white', 'gray', 'grey', 'beige', 'navy', 'tan', 'khaki', 'cream'],
+};
+
+// Color clash detection: combinations that should be avoided
+const COLOR_CLASHES: string[][] = [
+  // Warm color overload (too loud together)
+  ['red', 'orange', 'yellow'],
+  ['red', 'yellow', 'orange'],
+  ['orange', 'red', 'yellow'],
+  ['orange', 'yellow', 'red'],
+  ['yellow', 'red', 'orange'],
+  ['yellow', 'orange', 'red'],
+
+  // Competing bright colors
+  ['red', 'green'], // Christmas vibes unless intentional
+  ['purple', 'orange'], // Too loud
+  ['pink', 'orange'], // Clashing tones
+  ['yellow', 'pink'], // Too bright
+];
+
+// Neutral colors that work as anchors
+const NEUTRAL_COLORS = ['black', 'white', 'gray', 'grey', 'beige', 'navy', 'tan', 'khaki', 'cream'];
+
+/**
+ * Detect if outfit has clashing color combinations
+ * Returns penalty score (0 = no clash, -0.3 = major clash)
+ */
+const detectColorClash = (outfit: ClothingItem[]): number => {
+  const outfitColors = outfit.flatMap(item =>
+    item.colors.map(c => c.toLowerCase())
+  );
+
+  // Check for known bad combinations
+  for (const clash of COLOR_CLASHES) {
+    const hasAllClashColors = clash.every(clashColor =>
+      outfitColors.some(outfitColor => outfitColor.includes(clashColor))
+    );
+
+    if (hasAllClashColors) {
+      return -0.3; // Major penalty for clashing colors
+    }
+  }
+
+  // Check for monochrome outfits (all same color) - EXCEPT black/white
+  const uniqueColors = new Set(outfitColors);
+  if (uniqueColors.size === 1) {
+    const singleColor = Array.from(uniqueColors)[0];
+    // Allow all-black or all-white outfits
+    if (singleColor !== 'black' && singleColor !== 'white') {
+      return -0.2; // Penalty for monochrome (all blue, all red, etc.)
+    }
+  }
+
+  return 0; // No clash detected
+};
+
+/**
+ * Calculate neutral bonus for outfits with neutral shoes or neutral color schemes
+ * Returns bonus score (0 to +0.2)
+ */
+const calculateNeutralBonus = (outfit: ClothingItem[]): number => {
+  let bonus = 0;
+
+  // Check if outfit has neutral shoes (black/white get priority)
+  const shoes = outfit.find(item => item.category === 'shoes');
+  if (shoes) {
+    const shoeColors = shoes.colors.map(c => c.toLowerCase());
+    if (shoeColors.some(c => c === 'black' || c === 'white')) {
+      bonus += 0.15; // Big bonus for black/white shoes
+    } else if (shoeColors.some(c => NEUTRAL_COLORS.includes(c))) {
+      bonus += 0.1; // Smaller bonus for other neutral shoes
+    }
+  }
+
+  // Check if overall outfit has neutral color scheme
+  const allColors = outfit.flatMap(item => item.colors.map(c => c.toLowerCase()));
+  const neutralColorCount = allColors.filter(c => NEUTRAL_COLORS.includes(c)).length;
+  const neutralRatio = neutralColorCount / Math.max(allColors.length, 1);
+
+  // Bonus for outfits that are mostly neutral (cleaner, safer)
+  if (neutralRatio >= 0.7) {
+    bonus += 0.05; // Small bonus for clean, neutral outfits
+  }
+
+  return Math.min(bonus, 0.2); // Cap at 0.2
 };
 
 /**
  * Calculate color compatibility score between two clothing items
  * Returns a score from 0-1 (1 being most compatible)
+ * Uses hybrid approach: matrix for common colors, smart fallback for unusual combinations
  */
 export const calculateColorCompatibility = (item1: ClothingItem, item2: ClothingItem): number => {
   if (!item1.colors.length || !item2.colors.length) return 0.5; // Neutral if no color info
@@ -49,15 +142,37 @@ export const calculateColorCompatibility = (item1: ClothingItem, item2: Clothing
         continue;
       }
 
-      // Check compatibility matrix
+      // Check compatibility matrix (primary approach)
       const compatible = COLOR_COMPATIBILITY[normalizedColor1]?.includes(normalizedColor2) ||
                         COLOR_COMPATIBILITY[normalizedColor2]?.includes(normalizedColor1);
 
       if (compatible) {
         compatibilityScore += 0.8;
       } else {
-        // Unknown combinations get a lower score
-        compatibilityScore += 0.3;
+        // HYBRID FALLBACK: For unknown combinations, use smart heuristics
+        // If at least one color is neutral, it's probably okay
+        const color1IsNeutral = NEUTRAL_COLORS.includes(normalizedColor1);
+        const color2IsNeutral = NEUTRAL_COLORS.includes(normalizedColor2);
+
+        if (color1IsNeutral || color2IsNeutral) {
+          compatibilityScore += 0.6; // Better score if one is neutral
+        } else {
+          // Both are non-neutral colors not in our matrix
+          // Check if they're complementary tones (light + dark)
+          const lightColors = ['cream', 'beige', 'tan', 'pink', 'yellow', 'light'];
+          const darkColors = ['navy', 'black', 'brown', 'burgundy', 'maroon', 'dark'];
+
+          const color1IsLight = lightColors.some(c => normalizedColor1.includes(c));
+          const color2IsLight = lightColors.some(c => normalizedColor2.includes(c));
+          const color1IsDark = darkColors.some(c => normalizedColor1.includes(c));
+          const color2IsDark = darkColors.some(c => normalizedColor2.includes(c));
+
+          if ((color1IsLight && color2IsDark) || (color1IsDark && color2IsLight)) {
+            compatibilityScore += 0.5; // Light + dark often works
+          } else {
+            compatibilityScore += 0.3; // Truly unknown combination
+          }
+        }
       }
     }
   }
@@ -203,44 +318,135 @@ const calculateWeatherScore = (outfit: ClothingItem[], weather: WeatherData): nu
 };
 
 /**
- * Score a complete outfit based on color compatibility, style, user preferences, and weather
+ * Calculate occasion appropriateness score for an outfit
+ * Returns normalized score from 0-1 if AI occasion data available, null otherwise (fallback to existing algorithm)
+ *
+ * @param outfit - Array of clothing items
+ * @param occasion - Target occasion (work, class, gym, casual, social, formal, date, interview)
+ * @returns Score 0-1 if occasion data exists, null if should use fallback algorithm
+ */
+const calculateOccasionScore = (outfit: ClothingItem[], occasion: string): number | null => {
+  // Collect all occasion scores from items
+  const occasionScores: number[] = [];
+
+  for (const item of outfit) {
+    const occasionScoresData = item.aiAnalysis?.occasionScores;
+    if (!occasionScoresData) {
+      // If ANY item lacks occasion data, fall back to existing algorithm
+      return null;
+    }
+
+    // Get the score for the target occasion
+    const validOccasions = ['work', 'class', 'gym', 'casual', 'social', 'formal', 'date', 'interview'] as const;
+    type ValidOccasion = typeof validOccasions[number];
+
+    if (validOccasions.includes(occasion as ValidOccasion)) {
+      const score = occasionScoresData[occasion as ValidOccasion];
+      occasionScores.push(score);
+    } else {
+      // Unknown occasion, use neutral score
+      occasionScores.push(5); // 5/10 = neutral
+    }
+  }
+
+  // If we have no scores, fall back
+  if (occasionScores.length === 0) {
+    return null;
+  }
+
+  // Calculate average occasion score and normalize to 0-1
+  const avgScore = occasionScores.reduce((sum, score) => sum + score, 0) / occasionScores.length;
+  return avgScore / 10; // Convert 0-10 scale to 0-1
+};
+
+/**
+ * Score a complete outfit based on color compatibility, style, user preferences, weather, and occasion
  */
 export const scoreOutfit = (
   outfit: ClothingItem[],
   userProfile: UserProfile,
-  weather?: WeatherData
+  weather?: WeatherData,
+  occasion?: string
 ): number => {
   if (outfit.length < 2) return 0;
 
-  // Calculate pairwise color compatibility
-  let colorScore = 0;
-  let pairs = 0;
+  // SMART FALLBACK: Check if we have occasion data
+  const occasionScore = occasion ? calculateOccasionScore(outfit, occasion) : null;
 
-  for (let i = 0; i < outfit.length; i++) {
-    for (let j = i + 1; j < outfit.length; j++) {
-      colorScore += calculateColorCompatibility(outfit[i], outfit[j]);
-      pairs++;
+  // If occasion scoring is requested AND available, use occasion-based algorithm
+  if (occasionScore !== null) {
+    // OCCASION-BASED ALGORITHM
+    // Heavily weight occasion appropriateness (70%), with color/style/weather as secondary
+
+    // Calculate pairwise color compatibility
+    let colorScore = 0;
+    let pairs = 0;
+    for (let i = 0; i < outfit.length; i++) {
+      for (let j = i + 1; j < outfit.length; j++) {
+        colorScore += calculateColorCompatibility(outfit[i], outfit[j]);
+        pairs++;
+      }
     }
+    const avgColorScore = pairs > 0 ? colorScore / pairs : 0.5;
+
+    // Calculate style score
+    const styleScore = calculateStyleScore(outfit, userProfile);
+
+    // Calculate weather score (if available)
+    const weatherScore = weather ? calculateWeatherScore(outfit, weather) : 0;
+
+    // Detect color clashes (penalty)
+    const clashPenalty = detectColorClash(outfit);
+
+    // Neutral shoe/color bonus
+    const neutralBonus = calculateNeutralBonus(outfit);
+
+    // Weighted final score (occasion-focused)
+    // Base: Occasion (70%) + Color (15%) + Style (10%) + Favorites (5%)
+    // Modifiers: Weather + Clash Penalty + Neutral Bonus
+    const favoriteBonus = calculateFavoriteColorBonus(outfit, userProfile.favoriteColors);
+    const baseScore = (occasionScore * 0.7) + (avgColorScore * 0.15) + (styleScore * 0.1) + (favoriteBonus * 0.05);
+    const finalScore = baseScore + weatherScore + clashPenalty + neutralBonus;
+
+    return finalScore;
+  } else {
+    // FALLBACK: Use existing algorithm (no occasion data available)
+    // This ensures backward compatibility with items that haven't been re-analyzed
+
+    // Calculate pairwise color compatibility
+    let colorScore = 0;
+    let pairs = 0;
+    for (let i = 0; i < outfit.length; i++) {
+      for (let j = i + 1; j < outfit.length; j++) {
+        colorScore += calculateColorCompatibility(outfit[i], outfit[j]);
+        pairs++;
+      }
+    }
+    const avgColorScore = pairs > 0 ? colorScore / pairs : 0.5;
+
+    // Calculate style score
+    const styleScore = calculateStyleScore(outfit, userProfile);
+
+    // Calculate favorite color bonus
+    const favoriteBonus = calculateFavoriteColorBonus(outfit, userProfile.favoriteColors);
+
+    // Calculate weather score (if weather data available)
+    const weatherScore = weather ? calculateWeatherScore(outfit, weather) : 0;
+
+    // Detect color clashes (penalty)
+    const clashPenalty = detectColorClash(outfit);
+
+    // Neutral shoe/color bonus
+    const neutralBonus = calculateNeutralBonus(outfit);
+
+    // Weighted final score (original algorithm)
+    // Base score: Color (50%) + Style (40%) + Favorites (10%)
+    // Modifiers: Weather (-0.3 to +0.3) + Clash Penalty (-0.3 to 0) + Neutral Bonus (0 to +0.2)
+    const baseScore = (avgColorScore * 0.5) + (styleScore * 0.4) + (favoriteBonus * 0.1);
+    const finalScore = baseScore + weatherScore + clashPenalty + neutralBonus;
+
+    return finalScore;
   }
-
-  const avgColorScore = pairs > 0 ? colorScore / pairs : 0.5;
-
-  // Calculate style score
-  const styleScore = calculateStyleScore(outfit, userProfile);
-
-  // Calculate favorite color bonus
-  const favoriteBonus = calculateFavoriteColorBonus(outfit, userProfile.favoriteColors);
-
-  // Calculate weather score (if weather data available)
-  const weatherScore = weather ? calculateWeatherScore(outfit, weather) : 0;
-
-  // Weighted final score
-  // Base score: Color (50%) + Style (40%) + Favorites (10%)
-  // Weather bonus/penalty: -0.3 to +0.3 added on top
-  const baseScore = (avgColorScore * 0.5) + (styleScore * 0.4) + (favoriteBonus * 0.1);
-  const finalScore = baseScore + weatherScore;
-
-  return finalScore;
 };
 
 // Generate outfit combinations from wardrobe
@@ -249,7 +455,8 @@ export const generateOutfits = (
   profile: UserProfile,
   count: number = 10,
   weather?: WeatherData,
-  requiredItem?: ClothingItem
+  requiredItem?: ClothingItem,
+  occasion?: string
 ): Outfit[] => {
   // Separate items by category
   const tops = wardrobe.filter((item) => item.category === 'top');
@@ -304,7 +511,7 @@ export const generateOutfits = (
       }
 
       usedCombinations.add(comboKey);
-      const score = scoreOutfit(items, profile, weather);
+      const score = scoreOutfit(items, profile, weather, occasion);
 
       // Only keep outfits with decent scores (> 0.3)
       if (score > 0.3) {
@@ -330,7 +537,7 @@ export const generateOutfits = (
             items.push(randomAccessory);
           }
 
-          const score = scoreOutfit(items, profile, weather);
+          const score = scoreOutfit(items, profile, weather, occasion);
 
           // Only keep outfits with decent scores (> 0.3)
           if (score > 0.3) {

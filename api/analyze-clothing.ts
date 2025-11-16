@@ -32,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Prepare the prompt for GPT-4o Vision
+    // Enhance this prompt with occasion scoring guidance
     const systemPrompt = `You are a fashion analysis AI specialized in clothing categorization and analysis.
 
 CRITICAL INSTRUCTIONS - PHASE 11B ENHANCED DETECTION:
@@ -43,6 +44,25 @@ CRITICAL INSTRUCTIONS - PHASE 11B ENHANCED DETECTION:
 6. Provide confidence scores for your categorization (0.0 to 1.0)
 7. If uncertain, provide an alternate category suggestion
 
+OCCASION SCORING (Occasion-Aware Enhancement):
+Score each item's suitability for 8 different occasions on a scale of 0-10:
+- work: Professional office environments (business casual to business formal)
+- class: College classroom settings (comfortable but presentable)
+- gym: Athletic activities and workouts (performance and comfort)
+- casual: Everyday errands, hanging out with friends (relaxed, comfortable)
+- social: Parties, dinners, social gatherings (stylish but not overly formal)
+- formal: Interviews, ceremonies, formal events (professional, polished)
+- date: Romantic outings (stylish, intentional, confident)
+- interview: Job interviews, important meetings (most professional)
+
+OCCASION SCORING EXAMPLES:
+- White sneakers: {work: 5, class: 8, gym: 9, casual: 10, social: 6, formal: 1, date: 7, interview: 6}
+- Dress shoes (leather): {work: 9, class: 7, gym: 0, casual: 3, social: 8, formal: 10, date: 9, interview: 10}
+- Graphic t-shirt: {work: 2, class: 7, gym: 8, casual: 10, social: 7, formal: 0, date: 4, interview: 0}
+- Button-down shirt: {work: 9, class: 8, gym: 0, casual: 6, social: 8, formal: 9, date: 8, interview: 10}
+- Athletic shorts: {work: 0, class: 3, gym: 10, casual: 7, social: 2, formal: 0, date: 1, interview: 0}
+- Black slacks: {work: 10, class: 7, gym: 0, casual: 4, social: 7, formal: 10, date: 8, interview: 10}
+
 Your response must be valid JSON with this exact structure:
 {
   "description": "A detailed 2-3 sentence description of the clothing item",
@@ -52,6 +72,16 @@ Your response must be valid JSON with this exact structure:
   "season": "spring|summer|fall|winter|all-season",
   "formality": "casual|business-casual|formal",
   "occasion": ["work", "casual", "gym", etc],
+  "occasionScores": {
+    "work": 0-10,
+    "class": 0-10,
+    "gym": 0-10,
+    "casual": 0-10,
+    "social": 0-10,
+    "formal": 0-10,
+    "date": 0-10,
+    "interview": 0-10
+  },
   "confidence": 0.95,
   "reasoning": "Explain why you chose this category (mention key features like collar, sleeves, etc.)",
   "alternateCategory": "outerwear",

@@ -19,6 +19,17 @@ export interface AIClothingAnalysis {
   alternateConfidence?: number; // Confidence in alternate
   backgroundRemoved?: boolean; // Was background removed?
   mainSubjectDetected?: boolean; // Was clothing clearly detected?
+  // Occasion-Aware Enhancement: Scored suitability for each occasion
+  occasionScores?: {
+    work: number;      // 0-10 suitability score
+    class: number;     // 0-10 suitability score
+    gym: number;       // 0-10 suitability score
+    casual: number;    // 0-10 suitability score
+    social: number;    // 0-10 suitability score
+    formal: number;    // 0-10 suitability score
+    date: number;      // 0-10 suitability score
+    interview: number; // 0-10 suitability score
+  };
 }
 
 export interface ClothingItem {
