@@ -331,7 +331,7 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
                   <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {status === 'uploading'
                       ? 'Saving to wardrobe...'
-                      : 'Analyzing with AI...'} {processedCount} / {totalFiles} ({progress}%)
+                      : 'Processing clothing...'} {processedCount} / {totalFiles} ({progress}%)
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3">

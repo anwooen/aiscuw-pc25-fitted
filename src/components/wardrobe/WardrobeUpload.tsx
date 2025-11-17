@@ -182,7 +182,7 @@ export const WardrobeUpload = () => {
     : backgroundRemoval.status === 'processing'
     ? backgroundRemoval.stage || 'Processing image...'
     : isAnalyzing
-    ? 'Analyzing with AI...'
+    ? 'Analyzing clothing...'
     : isUploading
     ? 'Uploading...'
     : '';
@@ -530,12 +530,12 @@ export const WardrobeUpload = () => {
             </div>
           )}
 
-          {/* AI Analysis Results */}
+          {/* Analysis Results */}
           {isAnalyzing && (
             <div className="p-4 bg-uw-purple/10 border border-uw-purple/20 rounded-lg">
               <div className="flex items-center gap-2 text-uw-purple">
                 <Sparkles className="w-5 h-5 animate-pulse" />
-                <span className="text-sm font-medium">Analyzing with AI...</span>
+                <span className="text-sm font-medium">Analyzing clothing...</span>
               </div>
             </div>
           )}
@@ -545,7 +545,7 @@ export const WardrobeUpload = () => {
               <div className="flex items-center justify-between text-green-700 dark:text-green-400 mb-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5" />
-                  <span className="text-sm font-semibold">AI Analysis Complete</span>
+                  <span className="text-sm font-semibold">Analysis Complete</span>
                 </div>
                 {/* Phase 11B: Confidence Score */}
                 {aiAnalysis.confidence !== undefined && (
