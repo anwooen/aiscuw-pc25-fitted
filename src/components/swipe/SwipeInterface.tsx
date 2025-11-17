@@ -6,8 +6,6 @@ import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
 import { SwipeControls } from './SwipeControls';
 import { generateOutfits } from '../../utils/outfitGenerator';
-import { useWeather } from '../../hooks/useWeather';
-import { WeatherWidget } from '../shared/WeatherWidget';
 
 const SWIPE_THRESHOLD = 100;
 
@@ -23,8 +21,8 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
 
-  // Weather data for context
-  const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
+  // Get global weather data from store (Phase 18)
+  const weatherData = useStore((s) => s.weatherData);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -36,7 +34,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   useEffect(() => {
     if (!dailySuggestions.length && wardrobe.length > 0) {
       try {
-        const generated = generateOutfits(wardrobe, profile, 10, weather ?? undefined);
+        const generated = generateOutfits(wardrobe, profile, 10, weatherData ?? undefined);
         if (generated && generated.length > 0) {
           setDailySuggestions(generated as Outfit[]);
         }
@@ -44,7 +42,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
         console.error('Fallback outfit generation failed:', err);
       }
     }
-  }, [dailySuggestions.length, wardrobe, profile, weather, setDailySuggestions]);
+  }, [dailySuggestions.length, wardrobe, profile, weatherData, setDailySuggestions]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -166,11 +164,6 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
 
   return (
     <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden">
-      {/* Weather Widget - Visible and centered above card */}
-      <div className="mb-3">
-        <WeatherWidget weather={weather} loading={weatherLoading} error={weatherError} onRequestWeather={fetchWeather} />
-      </div>
-
       {/* Success Animation */}
       {showSuccess && (
         <motion.div

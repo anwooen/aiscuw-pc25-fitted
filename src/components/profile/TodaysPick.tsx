@@ -1,60 +1,13 @@
-import { useState, useEffect, memo } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { WardrobeUpload } from '../wardrobe/WardrobeUpload';
 import { meetsMinimumRequirements } from '../../utils/outfitGenerator';
 import { Sparkles, RefreshCw } from 'lucide-react';
-import { getImageURL } from '../../utils/storage';
-import { useWeather } from '../../hooks/useWeather';
-import { WeatherWidget } from '../shared/WeatherWidget';
-
-// Image component that loads from IndexedDB
-const TodayPickItemImage = memo(({ itemId, category }: { itemId: string; category: string }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadImage = async () => {
-      try {
-        const url = await getImageURL(itemId);
-        setImageUrl(url);
-      } catch (error) {
-        console.error('Failed to load image:', error);
-      }
-    };
-    loadImage();
-
-    // Cleanup: revoke object URL when component unmounts
-    return () => {
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
-      }
-    };
-  }, [itemId]);
-
-  return (
-    <>
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={category}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="animate-pulse bg-gray-200 dark:bg-gray-600 w-full h-full" />
-        </div>
-      )}
-    </>
-  );
-});
-
-TodayPickItemImage.displayName = 'TodayPickItemImage';
+import { OutfitDisplayCard } from '../shared/OutfitDisplayCard';
 
 export const TodaysPick = () => {
   const { todaysPick, setTodaysPick, wardrobe, outfitHistory } = useStore();
   const [showUploadModal, setShowUploadModal] = useState(false);
-
-  // Weather data for context
-  const { weather, loading: weatherLoading, error: weatherError, fetchWeather } = useWeather();
 
   const canSwipe = meetsMinimumRequirements(wardrobe);
 
@@ -144,113 +97,24 @@ export const TodaysPick = () => {
 
   return (
     <div className="pb-20 bg-gray-50 dark:bg-gray-900">
-      {/* Weather Widget */}
-      <div className="max-w-2xl mx-auto px-6 pt-6 mb-3">
-        <WeatherWidget weather={weather} loading={weatherLoading} error={weatherError} onRequestWeather={fetchWeather} />
-        {weather && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">
-            Perfect for {Math.round(weather.temperature)}°F and {weather.condition.toLowerCase()} weather!
-          </p>
-        )}
-      </div>
+      {/* Phase 18: Weather widget moved to Header (global) */}
 
-      {/* Outfit Display */}
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="rounded-2xl overflow-hidden shadow-xl bg-white dark:bg-gray-800">
-          {/* Outfit Items Grid */}
-          <div className="p-6">
-            {/* Tops and Outerwear */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {todaysPick.items
-                .filter(item => ['top', 'outerwear'].includes(item.category.toLowerCase()))
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
-                  >
-                    <TodayPickItemImage itemId={item.id} category={item.category} />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                      <span className="text-white font-semibold capitalize">
-                        {item.category}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </div>
+      {/* Outfit Display with 3D Effect */}
+      <div className="max-w-2xl mx-auto p-6 pt-3">
+        <OutfitDisplayCard items={todaysPick.items} depth="medium" />
 
-            {/* Bottoms */}
-            <div className="mb-6">
-              {todaysPick.items
-                .filter(item => ['pants', 'shorts', 'skirt', 'bottom'].includes(item.category.toLowerCase()))
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
-                  >
-                    <TodayPickItemImage itemId={item.id} category={item.category} />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                      <span className="text-white font-semibold capitalize">
-                        {item.category}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </div>
+        {/* Action Buttons - Below Card */}
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={handleReSwipe}
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-uw-purple text-white font-semibold rounded-xl hover:bg-purple-800 transition-colors shadow-lg"
+          >
+            <RefreshCw className="w-5 h-5" />
+            Pick a Different Outfit
+          </button>
 
-            {/* Shoes */}
-            <div className="mb-6">
-              {todaysPick.items
-                .filter(item => ['shoes', 'boots', 'sneakers'].includes(item.category.toLowerCase()))
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
-                  >
-                    <TodayPickItemImage itemId={item.id} category={item.category} />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                      <span className="text-white font-semibold capitalize">
-                        {item.category}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            {/* Accessories (if any) */}
-            {todaysPick.items.some(item => !['top', 'outerwear', 'pants', 'shorts', 'skirt', 'bottom', 'shoes', 'boots', 'sneakers'].includes(item.category.toLowerCase())) && (
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {todaysPick.items
-                  .filter(item => !['top', 'outerwear', 'pants', 'shorts', 'skirt', 'bottom', 'shoes', 'boots', 'sneakers'].includes(item.category.toLowerCase()))
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700"
-                    >
-                      <TodayPickItemImage itemId={item.id} category={item.category} />
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                        <span className="text-white font-semibold capitalize">
-                          {item.category}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={handleReSwipe}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-uw-purple text-white font-semibold rounded-xl hover:bg-purple-800 transition-colors"
-              >
-                <RefreshCw className="w-5 h-5" />
-                Pick a Different Outfit
-              </button>
-
-              <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                Selected on {new Date(todaysPick.createdAt).toLocaleDateString()}
-              </div>
-            </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+            Selected on {new Date(todaysPick.createdAt).toLocaleDateString()}
           </div>
         </div>
 

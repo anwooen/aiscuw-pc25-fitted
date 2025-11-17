@@ -127,6 +127,24 @@ export interface Outfit {
   liked?: boolean;
 }
 
+// Phase 18: Batch Upload Types
+export type BatchStatus = 'idle' | 'preprocessing' | 'uploading' | 'completed' | 'cancelled';
+
+export interface QueuedFile {
+  id: string;
+  file: File;
+  preview: string; // Base64 preview for UI
+  originalName: string;
+  category?: ClothingCategory;
+  // If we've preprocessed the image (converted + background removed), keep it to avoid redoing work
+  processedBlob?: Blob;
+  processedBase64?: string;
+  // AI analysis fields
+  aiAnalysis?: AIClothingAnalysis;
+  aiConfidence?: number;
+  aiStatus?: 'pending' | 'analyzing' | 'success' | 'failed';
+}
+
 export interface AppState {
   profile: UserProfile;
   wardrobe: ClothingItem[];
@@ -137,6 +155,22 @@ export interface AppState {
 
   // Phase 14: Clerk Authentication
   clerkUserId: string | null;
+
+  // Phase 18: Global Weather State
+  weatherData: WeatherData | null;
+  weatherLoading: boolean;
+  weatherError: string | null;
+
+  // Phase 18: Global Batch Upload State
+  batchUploadQueue: QueuedFile[];
+  batchUploadStatus: BatchStatus;
+  batchUploadProgress: {
+    totalFiles: number;
+    processedCount: number;
+    successCount: number;
+    errorCount: number;
+  };
+  shouldContinueBatchUpload: boolean;
 
   // Actions
   setProfile: (profile: UserProfile) => void;
@@ -154,6 +188,21 @@ export interface AppState {
 
   // Phase 14: Clerk Authentication Actions
   setClerkUserId: (userId: string | null) => void;
+
+  // Phase 18: Weather Actions
+  setWeather: (weather: WeatherData | null) => void;
+  setWeatherLoading: (loading: boolean) => void;
+  setWeatherError: (error: string | null) => void;
+  fetchWeather: () => Promise<void>;
+  clearWeatherCache: () => void;
+
+  // Phase 18: Batch Upload Actions
+  addBatchFiles: (files: File[]) => Promise<void>;
+  removeBatchFile: (fileId: string) => void;
+  updateBatchFileCategory: (fileId: string, category: ClothingCategory | null) => void;
+  startBatchUpload: () => Promise<void>;
+  cancelBatchUpload: () => void;
+  clearBatchQueue: () => void;
 }
 
 // Minimum requirements for unlocking swipe mode

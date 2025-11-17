@@ -2,9 +2,9 @@ import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
-import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, Moon, Sun, RotateCcw, Wand2 } from 'lucide-react';
+import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, RotateCcw, Wand2 } from 'lucide-react';
 import { MINIMUM_WARDROBE, UserProfile } from './types';
-import { Header } from './components/layout/Header';
+import { AppHeader } from './components/layout/AppHeader';
 
 // Lazy load components for code splitting
 const Welcome = lazy(() => import('./components/onboarding/Welcome').then(m => ({ default: m.Welcome })));
@@ -33,7 +33,7 @@ const LoadingFallback = () => (
 );
 
 function App() {
-  const { profile, completeOnboardingEnhanced, setDailySuggestions, theme, toggleTheme, removeDuplicateOutfits, resetOnboarding } = useStore();
+  const { profile, completeOnboardingEnhanced, setDailySuggestions, removeDuplicateOutfits, resetOnboarding } = useStore();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
   const [currentView, setCurrentView] = useState<AppView>('wardrobe');
   const wardrobeStats = useWardrobe();
@@ -45,6 +45,7 @@ function App() {
   }, [removeDuplicateOutfits]); // Run once on mount
 
   // Apply dark mode to document element
+  const theme = useStore((state) => state.theme);
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -216,7 +217,7 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          <Header title="Today's Pick" centered />
+          <AppHeader subtitle="Today's Pick" />
 
           <Suspense fallback={<LoadingFallback />}>
             <TodaysPick />
@@ -231,7 +232,7 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          <Header title="Outfit History" centered />
+          <AppHeader subtitle="Outfit History" />
 
           <Suspense fallback={<LoadingFallback />}>
             <OutfitHistory />
@@ -246,7 +247,7 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          <Header title="AI Generator" centered />
+          <AppHeader subtitle="AI Generator" />
 
           <Suspense fallback={<LoadingFallback />}>
             <AIOutfitGenerator />
@@ -261,7 +262,7 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          <Header title="Settings" centered />
+          <AppHeader subtitle="Settings" />
 
           <div className="max-w-2xl mx-auto p-6 space-y-6">
             {/* Reset Onboarding Card */}
@@ -308,7 +309,7 @@ function App() {
     return (
       <>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-          <Header title="Today's Picks" centered />
+          <AppHeader subtitle="Swipe for outfits" />
 
           {/* Swipe Interface */}
           <div className="h-[calc(100vh-140px)]">
@@ -326,23 +327,9 @@ function App() {
   return (
     <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header
-          title="Fitted"
+        <AppHeader
           subtitle="Build your wardrobe"
-          leftContent={
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-700" />
-              )}
-            </button>
-          }
-          rightContent={
+          extraRightContent={
             <div className="text-right">
               <div className="text-2xl font-bold text-uw-purple">
                 {wardrobeStats.stats.total}
