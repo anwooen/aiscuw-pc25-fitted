@@ -206,6 +206,8 @@ export interface RecommendOutfitsRequest {
   count?: number; // number of outfits to generate (default 5-10)
   // Phase 13: Enhanced personalization data
   profile?: UserProfile; // Full profile with all Phase 13 fields
+  // Phase 17: Context-aware generation
+  customPrompt?: string; // Additional context for AI (occasion, time, location, etc.)
 }
 
 export interface RecommendOutfitsResponse {

@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const request = req.body as RecommendOutfitsRequest;
-    const { wardrobe, weather, preferences, favoriteColors, count = 7, profile } = request;
+    const { wardrobe, weather, preferences, favoriteColors, count = 7, profile, customPrompt } = request;
 
     // Validate input
     if (!wardrobe || !Array.isArray(wardrobe) || wardrobe.length === 0) {
@@ -190,12 +190,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Prepare the prompt
     const systemPrompt = PromptBuilder.buildSystemPrompt(count);
-    const userPrompt = PromptBuilder.buildUserPrompt(
+    let userPrompt = PromptBuilder.buildUserPrompt(
       count,
       wardrobeDescription,
       weatherContext,
       preferencesContext
     );
+
+    // Phase 17: Inject custom context (occasion/time/location)
+    if (customPrompt) {
+      userPrompt += `\n\n=== SPECIAL REQUEST ===\n${customPrompt}\n\nPlease prioritize this request when generating outfits.`;
+    }
 
     // Generate outfit recommendations using OpenAI with client ID for rate limiting
     const result = await openaiService.generateOutfitRecommendations(systemPrompt, userPrompt, clientId);

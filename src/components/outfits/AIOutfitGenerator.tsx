@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, X, Search, Calendar, Clock, MapPin, Loader2 } from 'lucide-react';
+import { Sparkles, X, Search, Calendar, Clock, MapPin, Loader2, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ClothingItem, Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
 import { generateOutfits } from '../../utils/outfitGenerator';
+import { recommendOutfits } from '../../services/api';
+import { useWeather } from '../../hooks/useWeather';
 
 type GenerationType = 'occasion' | 'item' | 'freeform' | 'time' | 'location';
 
 export function AIOutfitGenerator() {
   const { wardrobe, profile, addOutfit } = useStore();
+  const { weather } = useWeather(); // Get weather data for AI context
   const [generationType, setGenerationType] = useState<GenerationType>('occasion');
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -18,6 +21,7 @@ export function AIOutfitGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedOutfits, setGeneratedOutfits] = useState<Outfit[]>([]);
   const [showItemPicker, setShowItemPicker] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const occasions = [
     'Casual Day Out',
@@ -53,32 +57,86 @@ export function AIOutfitGenerator() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedOutfits([]);
+    setErrorMessage(null);
 
     try {
-      // Simulate AI generation - in production this would call your AI API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
       let outfits: Outfit[];
 
-      if (generationType === 'item' && selectedItem) {
-        // Generate outfits that include the selected item
-        outfits = generateOutfits(wardrobe, profile, 5, undefined, selectedItem);
-      } else if (generationType === 'time') {
-        // Time-based generation (context logged for future AI integration)
-        console.log(`Generating outfit for: ${selectedTime}`);
-        outfits = generateOutfits(wardrobe, profile, 5);
-      } else if (generationType === 'location') {
-        // Location-based generation (context logged for future AI integration)
-        console.log(`Generating outfit for: ${selectedLocation}`);
-        outfits = generateOutfits(wardrobe, profile, 5);
-      } else {
-        // Generate outfits based on occasion or prompt
-        outfits = generateOutfits(wardrobe, profile, 5);
-      }
+      // Try AI generation first (default behavior)
+      try {
+        // Prepare wardrobe data for AI (no images, just metadata)
+        const wardrobeData = wardrobe.map(item => ({
+          id: item.id,
+          category: item.category,
+          colors: item.colors,
+          aiAnalysis: item.aiAnalysis,
+        }));
 
-      setGeneratedOutfits(outfits);
+        // Build context prompt based on generation type
+        let customPrompt = '';
+        if (generationType === 'occasion' && occasion) {
+          customPrompt = `Generate outfits appropriate for: ${occasion}`;
+        } else if (generationType === 'time' && selectedTime) {
+          customPrompt = `Generate outfits suitable for: ${selectedTime}. Consider the time of day and typical activities.`;
+        } else if (generationType === 'location' && selectedLocation) {
+          customPrompt = `Generate outfits appropriate for going to: ${selectedLocation}. Consider the venue and social context.`;
+        } else if (generationType === 'freeform' && prompt) {
+          customPrompt = prompt;
+        } else if (generationType === 'item' && selectedItem) {
+          customPrompt = `Generate outfits that include this ${selectedItem.category}: ${selectedItem.colors.join(', ')}`;
+        }
+
+        // Call AI API
+        const result = await recommendOutfits({
+          wardrobe: wardrobeData,
+          weather: weather || undefined,
+          preferences: profile.stylePreferences,
+          favoriteColors: profile.favoriteColors,
+          count: 5,
+          profile,
+          customPrompt: customPrompt || undefined,
+        });
+
+        if (result.success && result.outfits && result.outfits.length > 0) {
+          // Convert AI response to Outfit objects
+          outfits = result.outfits.map(suggestion => ({
+            id: crypto.randomUUID(),
+            items: suggestion.itemIds
+              .map(id => wardrobe.find(item => item.id === id))
+              .filter((item): item is ClothingItem => item !== undefined),
+            createdAt: new Date(),
+          }));
+
+          // Filter out any outfits with missing items
+          outfits = outfits.filter(outfit => outfit.items.length >= 3);
+
+          if (outfits.length > 0) {
+            setGeneratedOutfits(outfits);
+            setIsGenerating(false);
+            return; // Success! Exit early
+          } else {
+            throw new Error('AI returned incomplete outfits');
+          }
+        } else {
+          throw new Error(result.error || 'AI generation failed');
+        }
+      } catch (aiError) {
+        // AI failed - fall back to local algorithm
+        console.warn('AI generation failed, using local algorithm:', aiError);
+        setErrorMessage('AI unavailable. Using local algorithm instead.');
+
+        // Use local algorithm as fallback
+        if (generationType === 'item' && selectedItem) {
+          outfits = generateOutfits(wardrobe, profile, 5, weather ?? undefined, selectedItem);
+        } else {
+          outfits = generateOutfits(wardrobe, profile, 5, weather ?? undefined);
+        }
+
+        setGeneratedOutfits(outfits);
+      }
     } catch (error) {
-      console.error('Failed to generate outfits:', error);
+      console.error('Outfit generation completely failed:', error);
+      setErrorMessage('Failed to generate outfits. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -105,6 +163,27 @@ export function AIOutfitGenerator() {
             Let AI create perfect outfits for you
           </p>
         </div>
+
+        {/* Error Message Banner */}
+        {errorMessage && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-medium text-yellow-800 dark:text-yellow-200">
+                Generation Warning
+              </div>
+              <div className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                {errorMessage}
+              </div>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="ml-auto text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Generation Type Selector */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
@@ -349,7 +428,7 @@ export function AIOutfitGenerator() {
           {isGenerating ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" />
-              Generating...
+              Processing your wardrobe...
             </>
           ) : (
             <>
