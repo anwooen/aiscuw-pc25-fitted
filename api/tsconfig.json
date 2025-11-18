@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "resolveJsonModule": true,
+    "outDir": "../.vercel/output/functions",
+    "rootDir": "..",
+    "baseUrl": "..",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "./**/*"
+  ],
+  "exclude": [
+    "../node_modules",
+    "../.vercel",
+    "../dist"
+  ]
+}
