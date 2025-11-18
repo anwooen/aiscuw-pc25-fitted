@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, X, Search, Calendar, Clock, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, X, Search, Calendar, Clock, MapPin, Loader2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { ClothingItem, Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
@@ -21,7 +21,7 @@ export function AIOutfitGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedOutfits, setGeneratedOutfits] = useState<Outfit[]>([]);
   const [showItemPicker, setShowItemPicker] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // const [errorMessage, setErrorMessage] = useState<string | null>(null); // Commented out - error banner disabled
 
   const occasions = [
     'Casual Day Out',
@@ -57,7 +57,7 @@ export function AIOutfitGenerator() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedOutfits([]);
-    setErrorMessage(null);
+    // setErrorMessage(null); // Commented out - error banner disabled
 
     try {
       let outfits: Outfit[];
@@ -121,11 +121,7 @@ export function AIOutfitGenerator() {
           throw new Error(result.error || 'AI generation failed');
         }
       } catch (aiError) {
-        // AI failed - fall back to local algorithm
-        console.warn('AI generation failed, using local algorithm:', aiError);
-        setErrorMessage('AI unavailable. Using local algorithm instead.');
-
-        // Use local algorithm as fallback
+        // AI failed - fall back to local algorithm silently
         if (generationType === 'item' && selectedItem) {
           outfits = generateOutfits(wardrobe, profile, 5, weather ?? undefined, selectedItem);
         } else {
@@ -136,7 +132,7 @@ export function AIOutfitGenerator() {
       }
     } catch (error) {
       console.error('Outfit generation completely failed:', error);
-      setErrorMessage('Failed to generate outfits. Please try again.');
+      // Silent fallback - no error message shown to user
     } finally {
       setIsGenerating(false);
     }
@@ -164,8 +160,8 @@ export function AIOutfitGenerator() {
           </p>
         </div>
 
-        {/* Error Message Banner */}
-        {errorMessage && (
+        {/* Error Message Banner - COMMENTED OUT */}
+        {/* {errorMessage && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -183,7 +179,7 @@ export function AIOutfitGenerator() {
               <X className="w-4 h-4" />
             </button>
           </div>
-        )}
+        )} */}
 
         {/* Generation Type Selector */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
