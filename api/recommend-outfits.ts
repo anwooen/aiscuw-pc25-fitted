@@ -215,7 +215,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error: unknown) {
+    // Log the actual error (safe - doesn't expose secrets)
     console.error('Error generating outfit recommendations:', error);
+
+    // Add diagnostic context (NO SECRETS!)
+    console.error('Diagnostic info:');
+    console.error('  - Has API key configured:', !!process.env.OPENAI_API_KEY);
+    console.error('  - Wardrobe items count:', req.body?.wardrobe?.length || 0);
+    console.error('  - Has user preferences:', !!req.body?.preferences);
+    console.error('  - Has custom prompt:', !!req.body?.customPrompt);
 
     interface ErrorWithStatus {
       status: number;
