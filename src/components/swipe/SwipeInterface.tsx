@@ -14,8 +14,9 @@ interface SwipeInterfaceProps {
 }
 
 export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
-  const { dailySuggestions, setTodaysPick, addOutfit, setDailySuggestions } = useStore();
-  const wardrobe = useStore((s) => s.wardrobe);
+  // Defensive guards: ensure dailySuggestions is never undefined
+  const { dailySuggestions = [], setTodaysPick, addOutfit, setDailySuggestions } = useStore();
+  const wardrobe = useStore((s) => s.wardrobe ?? []);
   const profile = useStore((s) => s.profile);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -28,11 +29,15 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
 
+  // Swipe indicator opacities (must be at top level - Rules of Hooks!)
+  const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
+  const likeOpacity = useTransform(x, [0, 100], [0, 1]);
+
   const currentOutfit = dailySuggestions[currentIndex];
 
   // Generate fallback outfits if needed (MUST be at top level - Rules of Hooks!)
   useEffect(() => {
-    if (!dailySuggestions.length && wardrobe.length > 0) {
+    if (dailySuggestions.length === 0 && wardrobe.length > 0) {
       try {
         const generated = generateOutfits(wardrobe, profile, 10, weatherData ?? undefined);
         if (generated && generated.length > 0) {
@@ -146,7 +151,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     }
   };
 
-  if (!dailySuggestions.length) {
+  if (!dailySuggestions || dailySuggestions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
         <p className="text-gray-500 dark:text-gray-400">
@@ -213,7 +218,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
           <motion.div
             className="absolute top-8 left-8 z-10 bg-red-500 text-white px-6 py-2 rounded-lg font-bold text-xl rotate-[-20deg] border-4 border-red-500"
             style={{
-              opacity: useTransform(x, [-100, 0], [1, 0]),
+              opacity: nopeOpacity,
             }}
           >
             NOPE
@@ -221,7 +226,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
           <motion.div
             className="absolute top-8 right-8 z-10 bg-green-500 text-white px-6 py-2 rounded-lg font-bold text-xl rotate-[20deg] border-4 border-green-500"
             style={{
-              opacity: useTransform(x, [0, 100], [0, 1]),
+              opacity: likeOpacity,
             }}
           >
             LIKE
