@@ -99,9 +99,9 @@ export const TodaysPick = () => {
     <div className="pb-20 bg-gray-50 dark:bg-gray-900">
       {/* Phase 18: Weather widget moved to Header (global) */}
 
-      {/* Outfit Display with 3D Effect */}
+      {/* Outfit Display */}
       <div className="max-w-2xl mx-auto p-6 pt-3">
-        <OutfitDisplayCard items={todaysPick.items} depth="medium" />
+        <OutfitDisplayCard items={todaysPick.items} />
 
         {/* Action Buttons - Below Card */}
         <div className="mt-6 space-y-3">
