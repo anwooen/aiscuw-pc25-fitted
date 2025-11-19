@@ -143,14 +143,14 @@ export const WardrobeUpload = () => {
       } else {
         // Don't show error for cancelled requests
         if (data.error !== 'Request cancelled') {
-          setError(data.error || 'Failed to analyze image with AI');
+          setError(data.error || 'Failed to process image');
         }
       }
     } catch (err: any) {
       // Unexpected errors (wrapper handles AbortError gracefully)
-      console.error('AI analysis error:', err);
+      console.error('Image processing error:', err);
       if (operationIdRef.current === opId) {
-        setError('AI analysis failed. You can still add the item manually.');
+        setError('Processing failed. You can still add the item manually.');
       }
     } finally {
       if (operationIdRef.current === opId) {
@@ -182,7 +182,7 @@ export const WardrobeUpload = () => {
     : backgroundRemoval.status === 'processing'
     ? backgroundRemoval.stage || 'Processing image...'
     : isAnalyzing
-    ? 'Analyzing clothing...'
+    ? 'Processing clothing...'
     : isUploading
     ? 'Uploading...'
     : '';
@@ -448,7 +448,7 @@ export const WardrobeUpload = () => {
                         : isUploading
                           ? 'Uploading...'
                           : isAnalyzing
-                            ? 'Analyzing image...'
+                            ? 'Processing image...'
                             : 'Processing...'}
                   </div>
                   {backgroundRemoval.status === 'processing' && (
@@ -535,7 +535,7 @@ export const WardrobeUpload = () => {
             <div className="p-4 bg-uw-purple/10 border border-uw-purple/20 rounded-lg">
               <div className="flex items-center gap-2 text-uw-purple">
                 <Sparkles className="w-5 h-5 animate-pulse" />
-                <span className="text-sm font-medium">Analyzing clothing...</span>
+                <span className="text-sm font-medium">Processing clothing...</span>
               </div>
             </div>
           )}

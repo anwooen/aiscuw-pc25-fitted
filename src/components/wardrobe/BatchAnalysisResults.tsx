@@ -51,21 +51,21 @@ const getConfidenceIndicator = (confidence: number) => {
       color: 'text-green-600 dark:text-green-500',
       bgColor: 'bg-green-100 dark:bg-green-900/30',
       icon: CheckCircle,
-      label: 'High confidence',
+      label: 'Ready to save',
     };
   } else if (confidence >= CONFIDENCE_THRESHOLDS.MEDIUM) {
     return {
       color: 'text-amber-600 dark:text-amber-500',
       bgColor: 'bg-amber-100 dark:bg-amber-900/30',
       icon: AlertTriangle,
-      label: 'Medium confidence - Review recommended',
+      label: 'Review recommended',
     };
   } else {
     return {
       color: 'text-red-600 dark:text-red-500',
       bgColor: 'bg-red-100 dark:bg-red-900/30',
       icon: XCircle,
-      label: 'Low confidence - Manual review required',
+      label: 'Manual review required',
     };
   }
 };
@@ -199,7 +199,7 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
             Analysis Results
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Review and edit AI analysis before saving to your wardrobe
+            Review and edit items before saving to your wardrobe
           </p>
         </div>
 
@@ -216,7 +216,7 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
             <div className="text-2xl font-bold text-green-600 dark:text-green-500">
               {highConfidence.length}
             </div>
-            <div className="text-sm text-green-700 dark:text-green-400">High Confidence</div>
+            <div className="text-sm text-green-700 dark:text-green-400">Ready</div>
           </div>
 
           <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
@@ -230,7 +230,7 @@ export const BatchAnalysisResults: React.FC<BatchAnalysisResultsProps> = ({
             <div className="text-2xl font-bold text-red-600 dark:text-red-500">
               {errorResults.length + lowConfidence.length}
             </div>
-            <div className="text-sm text-red-700 dark:text-red-400">Errors/Low Conf.</div>
+            <div className="text-sm text-red-700 dark:text-red-400">Errors</div>
           </div>
         </div>
 
