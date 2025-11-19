@@ -7,7 +7,6 @@ interface FeatureCardProps {
   title: string;
   description: string;
   delay: number;
-  iconAnimation?: 'rotate' | 'glow' | 'swipe';
 }
 
 const cardVariants = {
@@ -31,7 +30,6 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   title,
   description,
   delay,
-  iconAnimation = 'rotate',
 }) => {
   return (
     <motion.article

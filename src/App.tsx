@@ -55,6 +55,21 @@ function App() {
     }
   }, [theme]);
 
+  // Phase 18: Prevent accidental refresh during batch upload
+  const batchStatus = useStore((state) => state.batchUploadStatus);
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (batchStatus === 'preprocessing' || batchStatus === 'uploading') {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires this to be set
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [batchStatus]);
+
   // Update store with daily suggestions when they're generated
   useEffect(() => {
     if (outfits.length > 0) {
