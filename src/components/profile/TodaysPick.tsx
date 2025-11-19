@@ -117,18 +117,6 @@ export const TodaysPick = () => {
             Selected on {new Date(todaysPick.createdAt).toLocaleDateString()}
           </div>
         </div>
-
-        {/* Tips Section */}
-        <div className="mt-6 p-4 rounded-xl bg-purple-50 dark:bg-gray-800">
-          <h3 className="font-semibold mb-2 text-uw-purple dark:text-white">
-            Style Tips
-          </h3>
-          <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-            <li>• Take a photo to remember this outfit combination</li>
-            <li>• Check the weather before heading out</li>
-            <li>• Add accessories to personalize your look</li>
-          </ul>
-        </div>
       </div>
     </div>
   );

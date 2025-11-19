@@ -17,7 +17,7 @@ export const WardrobeUpload = () => {
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(true); // Enable AI analysis by default
+  const [useAI] = useState(true); // Enable AI analysis by default (UI toggle removed)
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIClothingAnalysis | null>(null);
   const [batchMode, setBatchMode] = useState(false);
@@ -141,16 +141,15 @@ export const WardrobeUpload = () => {
         // Auto-select the suggested category (user can still override)
         setSelectedCategory(data.analysis.suggestedCategory || null);
       } else {
-        // Don't show error for cancelled requests
-        if (data.error !== 'Request cancelled') {
-          setError(data.error || 'Failed to process image');
-        }
+        // Silent fallback - don't show error to user
+        console.warn('AI Analysis failed, falling back to manual selection:', data.error);
       }
     } catch (err: any) {
       // Unexpected errors (wrapper handles AbortError gracefully)
       console.error('Image processing error:', err);
       if (operationIdRef.current === opId) {
-        setError('Processing failed. You can still add the item manually.');
+        // Silent fallback
+        console.warn('Processing failed, falling back to manual selection');
       }
     } finally {
       if (operationIdRef.current === opId) {
@@ -327,58 +326,47 @@ export const WardrobeUpload = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Add Clothing Item
         </h2>
-
-        <div className="flex items-center gap-4">
-          {/* Batch Mode Button */}
-          <button
-            onClick={() => setBatchMode(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-uw-purple/10 text-uw-purple dark:bg-uw-purple/20 dark:text-uw-gold rounded-lg hover:bg-uw-purple/20 dark:hover:bg-uw-purple/30 transition-colors"
-          >
-            <Layers className="w-4 h-4" />
-            <span className="text-sm font-medium">Batch Upload</span>
-          </button>
-
-          {/* AI Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useAI}
-              onChange={(e) => setUseAI(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-uw-purple/20 dark:peer-focus:ring-uw-purple/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-uw-purple"></div>
-            <span className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <Sparkles className="w-4 h-4" />
-              AI Analysis
-            </span>
-          </label>
-        </div>
       </div>
 
       {!selectedFile ? (
         <div className="space-y-4">
           {/* Upload buttons (replaced by progress bar while processing) */}
           {!isProcessing ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-4">
+              {/* Top: Upload Photo (Horizontal) */}
               <button
                 onClick={handleUploadClick}
-                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+                className="w-full flex items-center justify-center gap-3 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
               >
-                <Upload className="w-12 h-12 text-gray-400 mb-2" />
+                <Upload className="w-6 h-6 text-gray-400" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Upload Photo
                 </span>
               </button>
 
-              <button
-                onClick={handleCameraClick}
-                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
-              >
-                <Camera className="w-12 h-12 text-gray-400 mb-2" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Take Photo
-                </span>
-              </button>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Bottom Left: Batch Upload */}
+                <button
+                  onClick={() => setBatchMode(true)}
+                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+                >
+                  <Layers className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Batch Upload
+                  </span>
+                </button>
+
+                {/* Bottom Right: Take Photo */}
+                <button
+                  onClick={handleCameraClick}
+                  className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-uw-purple hover:bg-uw-purple/5 transition-colors"
+                >
+                  <Camera className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Take Photo
+                  </span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center gap-4">
