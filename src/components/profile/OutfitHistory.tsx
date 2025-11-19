@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, memo } from 'react';
 import { useStore } from '../../store/useStore';
-import { Calendar, Heart } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import type { Outfit } from '../../types';
 import { getImageURL } from '../../utils/storage';
 
@@ -49,21 +49,13 @@ HistoryItemImage.displayName = 'HistoryItemImage';
 export const OutfitHistory = () => {
   const { outfitHistory } = useStore();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [filterLiked, setFilterLiked] = useState(false);
 
-  // Filter and sort outfits
+  // Sort outfits by most recent first (all saved outfits are liked)
   const filteredOutfits = useMemo(() => {
-    let filtered = [...outfitHistory];
-
-    if (filterLiked) {
-      filtered = filtered.filter(outfit => outfit.liked);
-    }
-
-    // Sort by most recent first
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return filtered;
-  }, [outfitHistory, filterLiked]);
+    const sorted = [...outfitHistory];
+    sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return sorted;
+  }, [outfitHistory]);
 
   // Group outfits by date for calendar view
   const groupedByDate = useMemo(() => {
@@ -93,17 +85,12 @@ export const OutfitHistory = () => {
 
       {/* Outfit Info */}
       <div className="p-3">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {new Date(outfit.createdAt).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            })}
-          </div>
-          {outfit.liked && (
-            <Heart className="w-4 h-4 fill-red-500 text-red-500" />
-          )}
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {new Date(outfit.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })}
         </div>
         <div className="text-xs mt-1 text-gray-500">
           {outfit.items.length} items
@@ -122,7 +109,7 @@ export const OutfitHistory = () => {
               No Outfit History Yet
             </h2>
             <p className="text-center text-gray-600 dark:text-gray-400">
-              Start swiping and saving outfits to see them here!
+              Start swiping right on outfits you love to see them here!
             </p>
           </div>
         </div>
@@ -140,43 +127,27 @@ export const OutfitHistory = () => {
           </div>
         </div>
 
-        {/* View Toggle & Filter */}
-        <div className="flex items-center gap-3">
-          {/* View Mode Toggle */}
-          <div className="flex gap-1 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white dark:bg-gray-600 text-uw-purple dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-uw-purple dark:hover:text-white'
-              }`}
-            >
-              List
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                viewMode === 'calendar'
-                  ? 'bg-white dark:bg-gray-600 text-uw-purple dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-uw-purple dark:hover:text-white'
-              }`}
-            >
-              Calendar
-            </button>
-          </div>
-
-          {/* Filter Toggle */}
+        {/* View Toggle */}
+        <div className="flex gap-1 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
           <button
-            onClick={() => setFilterLiked(!filterLiked)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterLiked
-                ? 'bg-uw-purple text-white shadow-sm'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              viewMode === 'list'
+                ? 'bg-white dark:bg-gray-600 text-uw-purple dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-uw-purple dark:hover:text-white'
             }`}
           >
-            <Heart className={`w-4 h-4 ${filterLiked ? 'fill-white text-white' : ''}`} />
-            Liked Only
+            List
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              viewMode === 'calendar'
+                ? 'bg-white dark:bg-gray-600 text-uw-purple dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-uw-purple dark:hover:text-white'
+            }`}
+          >
+            Calendar
           </button>
         </div>
       </div>

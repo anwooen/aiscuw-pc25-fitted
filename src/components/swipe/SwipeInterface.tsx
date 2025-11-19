@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
@@ -19,7 +18,6 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   const wardrobe = useStore((s) => s.wardrobe ?? []);
   const profile = useStore((s) => s.profile);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
 
   // Get global weather data from store (Phase 18)
@@ -103,23 +101,19 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     // Set as today's pick if it's the first like
     setTodaysPick(likedOutfit);
 
-    // Show success animation
-    setShowSuccess(true);
-
     // Check if we're at the last outfit
     if (currentIndex === dailySuggestions.length - 1) {
       // Navigate to history page after animation
       setTimeout(() => {
         onNavigate?.('history');
-      }, 600);
+      }, 250);
     } else {
       // Normal progression
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
         x.set(0);
         setDirection(null);
-        setShowSuccess(false);
-      }, 600);
+      }, 250);
     }
   };
 
@@ -128,26 +122,21 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
 
     setDirection('left');
 
-    // Add to history with disliked status
-    const dislikedOutfit: Outfit = {
-      ...currentOutfit,
-      liked: false,
-    };
-    addOutfit(dislikedOutfit);
+    // Don't save disliked outfits - only liked outfits are saved to history
 
     // Check if we're at the last outfit
     if (currentIndex === dailySuggestions.length - 1) {
       // Navigate to history page after animation
       setTimeout(() => {
         onNavigate?.('history');
-      }, 300);
+      }, 250);
     } else {
       // Normal progression
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
         x.set(0);
         setDirection(null);
-      }, 300);
+      }, 250);
     }
   };
 
@@ -169,21 +158,6 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
 
   return (
     <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden">
-      {/* Success Animation */}
-      {showSuccess && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none"
-        >
-          <div className="bg-uw-purple text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3">
-            <Sparkles className="w-6 h-6" />
-            <span className="text-lg font-bold">Today's Pick!</span>
-          </div>
-        </motion.div>
-      )}
-
       {/* Card Stack */}
       <div className="relative flex-1 mb-4">
         {/* Next card preview */}
