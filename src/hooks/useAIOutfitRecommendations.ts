@@ -174,10 +174,9 @@ export const useAIOutfitRecommendations = (options: UseAIOutfitRecommendationsOp
       // Try AI first
       generated = await generateAIOutfits();
 
-      // Fallback to classic if AI fails
+      // Fallback to classic if AI fails (silent fallback)
       if (!generated || generated.length === 0) {
         console.warn('AI generation failed, falling back to classic algorithm');
-        setError('AI unavailable, using classic algorithm');
         generated = generateClassicOutfits();
         setIsUsingAI(false); // Switch to classic mode for this session
       }

@@ -121,9 +121,8 @@ export function AIOutfitGenerator() {
           throw new Error(result.error || 'AI generation failed');
         }
       } catch (aiError) {
-        // AI failed - fall back to local algorithm
+        // AI failed - fall back to local algorithm (silent fallback, no error shown to user)
         console.warn('AI generation failed, using local algorithm:', aiError);
-        setErrorMessage('AI unavailable. Using local algorithm instead.');
 
         // Use local algorithm as fallback
         if (generationType === 'item' && selectedItem) {
