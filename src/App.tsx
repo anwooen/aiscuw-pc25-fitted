@@ -17,6 +17,7 @@ const OutfitHistory = lazy(() => import('./components/profile/OutfitHistory').th
 const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings').then(m => ({ default: m.ProfileSettings })));
 const AIOutfitGenerator = lazy(() => import('./components/outfits/AIOutfitGenerator').then(m => ({ default: m.AIOutfitGenerator })));
 
+
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
 type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'aiGenerator';
 
@@ -258,6 +259,7 @@ function App() {
     );
   }
 
+
   if (currentView === 'settings') {
     return (
       <>
@@ -312,7 +314,7 @@ function App() {
           <AppHeader subtitle="Swipe for outfits" />
 
           {/* Swipe Interface */}
-          <div className="h-[calc(100vh-140px)]">
+          <div className="min-h-[calc(100vh-140px)]">
             <Suspense fallback={<LoadingFallback />}>
               <SwipeInterface onNavigate={setCurrentView} />
             </Suspense>

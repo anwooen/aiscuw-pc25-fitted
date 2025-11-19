@@ -56,7 +56,7 @@ OutfitItemImage.displayName = 'OutfitItemImage';
  */
 export const OutfitItemsDisplay = memo(({ items, showLabels = true, className = '' }: OutfitItemsDisplayProps) => {
   return (
-    <div className={`flex flex-col justify-center gap-4 ${className}`}>
+    <div className={`flex flex-col justify-center gap-3 ${className}`}>
       {items.map((item) => (
         <div key={item.id} className="relative group flex-shrink-0">
           <div className="w-full max-w-xs mx-auto">

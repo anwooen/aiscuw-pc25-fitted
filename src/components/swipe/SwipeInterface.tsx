@@ -157,9 +157,9 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden">
+    <div className="flex flex-col w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden min-h-[calc(100vh-4rem)]">
       {/* Card Stack */}
-      <div className="relative flex-1 mb-4">
+      <div className="relative mb-4">
         {/* Next card preview */}
         {dailySuggestions[currentIndex + 1] && (
           <div className="absolute inset-0 opacity-50 scale-95">
@@ -169,11 +169,12 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
 
         {/* Current swipeable card */}
         <motion.div
-          className="absolute inset-0 cursor-default hover:cursor-grab active:cursor-grabbing"
+          className="relative cursor-default hover:cursor-grab active:cursor-grabbing"
           style={{
             x,
             rotate,
             opacity,
+            zIndex: 10
           }}
           drag="x"
           dragConstraints={{ left: -300, right: 300 }}
