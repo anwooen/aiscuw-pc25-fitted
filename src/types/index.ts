@@ -274,3 +274,5 @@ export interface WeatherResponse {
   weather?: WeatherData;
   error?: string;
 }
+
+export type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'aiGenerator';

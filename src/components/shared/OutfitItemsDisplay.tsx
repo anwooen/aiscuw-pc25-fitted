@@ -55,9 +55,25 @@ OutfitItemImage.displayName = 'OutfitItemImage';
  * Used by OutfitCard (swipe) and TodaysPick (profile)
  */
 export const OutfitItemsDisplay = memo(({ items, showLabels = true, className = '' }: OutfitItemsDisplayProps) => {
+  // Sort items by category for consistent display order
+  // Desired order: Outerwear -> Top -> Bottom -> Shoes -> Accessory
+  const categoryOrder: Record<string, number> = {
+    'outerwear': 0,
+    'top': 1,
+    'bottom': 2,
+    'shoes': 3,
+    'accessory': 4
+  };
+
+  const sortedItems = [...items].sort((a, b) => {
+    const orderA = categoryOrder[a.category] ?? 99;
+    const orderB = categoryOrder[b.category] ?? 99;
+    return orderA - orderB;
+  });
+
   return (
     <div className={`flex flex-col justify-center gap-3 ${className}`}>
-      {items.map((item) => (
+      {sortedItems.map((item) => (
         <div key={item.id} className="relative group flex-shrink-0">
           <div className="w-full max-w-xs mx-auto">
             <OutfitItemImage itemId={item.id} category={item.category} />

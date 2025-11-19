@@ -4,12 +4,18 @@ import { WardrobeUpload } from '../wardrobe/WardrobeUpload';
 import { meetsMinimumRequirements } from '../../utils/outfitGenerator';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { OutfitDisplayCard } from '../shared/OutfitDisplayCard';
+import { AppView } from '../../types';
 
-export const TodaysPick = () => {
+interface TodaysPickProps {
+  onNavigate?: (view: AppView) => void;
+}
+
+export const TodaysPick = ({ onNavigate }: TodaysPickProps) => {
   const { todaysPick, setTodaysPick, wardrobe, outfitHistory } = useStore();
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const canSwipe = meetsMinimumRequirements(wardrobe);
+  const hasHistory = outfitHistory.some(o => o.liked);
 
   const handleReSwipe = () => {
     // DEBUG: Log current state
@@ -58,12 +64,21 @@ export const TodaysPick = () => {
               Swipe through outfits to pick today's look!
             </p>
             {canSwipe ? (
-              <button
-                onClick={handleReSwipe}
-                className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
-              >
-                Start Swiping
-              </button>
+              hasHistory ? (
+                <button
+                  onClick={handleReSwipe}
+                  className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Generate Pick
+                </button>
+              ) : (
+                <button
+                  onClick={() => onNavigate?.('swipe')}
+                  className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Do your first pick
+                </button>
+              )
             ) : (
               <>
                 <button

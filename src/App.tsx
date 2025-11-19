@@ -3,7 +3,7 @@ import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
 import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, RotateCcw, Wand2 } from 'lucide-react';
-import { MINIMUM_WARDROBE, UserProfile } from './types';
+import { MINIMUM_WARDROBE, UserProfile, AppView } from './types';
 import { AppHeader } from './components/layout/AppHeader';
 
 // Lazy load components for code splitting
@@ -19,7 +19,6 @@ const AIOutfitGenerator = lazy(() => import('./components/outfits/AIOutfitGenera
 
 
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
-type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'aiGenerator';
 
 // Loading fallback component``
 const LoadingFallback = () => (
@@ -236,7 +235,7 @@ function App() {
           <AppHeader subtitle="Today's Pick" />
 
           <Suspense fallback={<LoadingFallback />}>
-            <TodaysPick />
+            <TodaysPick onNavigate={setCurrentView} />
           </Suspense>
         </div>
         <BottomNav />
