@@ -12,6 +12,8 @@ import { useBackgroundRemoval } from '../../hooks/useBackgroundRemoval';
 import { BatchUpload } from './BatchUpload';
 
 export const WardrobeUpload = () => {
+  const { addClothingItem, profile, batchUploadStatus, batchUploadQueue } = useStore();
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ClothingCategory | null>(null);
@@ -20,13 +22,17 @@ export const WardrobeUpload = () => {
   const [useAI] = useState(true); // Enable AI analysis by default (UI toggle removed)
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIClothingAnalysis | null>(null);
-  const [batchMode, setBatchMode] = useState(false);
+  
+  // Initialize batchMode based on global state to persist view across navigation
+  const [batchMode, setBatchMode] = useState(() => {
+    return batchUploadStatus !== 'idle' || batchUploadQueue.length > 0;
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const operationIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { addClothingItem, profile } = useStore();
   const { convertImage, isConverting, progress, error: conversionError, checkIfNeedsConversion, getFormat } = useImageConverter();
   const backgroundRemoval = useBackgroundRemoval();
 
@@ -79,6 +85,14 @@ export const WardrobeUpload = () => {
 
       processedFile = converted;
       console.log(`Successfully converted ${format} to JPEG`);
+    }
+
+    // Step 1.5: Resize optimization (Prevent mobile crashes & speed up processing)
+    try {
+      const resizedBlob = await compressImage(processedFile, 1, 1024);
+      processedFile = new File([resizedBlob], processedFile.name, { type: resizedBlob.type });
+    } catch (resizeErr) {
+      console.warn('Resize optimization failed, continuing with original:', resizeErr);
     }
 
     // Step 2: Background removal (ALWAYS RUNS - Phase 11B)

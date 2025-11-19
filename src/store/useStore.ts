@@ -373,8 +373,13 @@ export const useStore = create<AppState>()(
             // Convert format if needed
             const converted = await convertImageIfNeeded(file);
 
-            // Run background removal
-            const processedBlob = await processImageForAI(converted);
+            // OPTIMIZATION: Resize image BEFORE background removal to prevent mobile crashes
+            // Resize to max 1024px. This is enough for AI and UI, but much smaller in memory.
+            const resizedBlob = await compressImage(converted, 1, 1024);
+            const resizedFile = new File([resizedBlob], file.name, { type: resizedBlob.type });
+
+            // Run background removal on resized image
+            const processedBlob = await processImageForAI(resizedFile);
 
             // Create base64 preview from processed blob
             const reader = new FileReader();
