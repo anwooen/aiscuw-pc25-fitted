@@ -522,6 +522,9 @@ export const useStore = create<AppState>()(
          * Process a single file
          */
         const processFile = async (queuedFile: QueuedFile): Promise<{ id: string; status: 'success' | 'error' }> => {
+          const startTime = Date.now();
+          console.log(`      🔄 Starting: "${queuedFile.originalName}"`);
+
           try {
             if (!queuedFile.category) {
               throw new Error('Category not selected');
@@ -530,21 +533,24 @@ export const useStore = create<AppState>()(
             // Reuse preprocessed blob if available
             let processedBlob: Blob;
             if (queuedFile.processedBlob) {
+              console.log(`      💾 Using preprocessed blob for "${queuedFile.originalName}"`);
               processedBlob = queuedFile.processedBlob;
             } else {
               // Phase 18: Robust fallback logic & Performance Optimization
               try {
+                console.log(`      🔧 Converting and resizing "${queuedFile.originalName}"...`);
                 const convertedFile = await convertImageIfNeeded(queuedFile.file);
-                
+
                 // OPTIMIZATION: Resize image BEFORE background removal
                 // Background removal on 12MP images is extremely slow. Resizing to 1024px first makes it 10x faster.
                 const resizedBlob = await compressImage(convertedFile, 1, 1024);
                 const resizedFile = new File([resizedBlob], queuedFile.originalName, { type: resizedBlob.type });
 
+                console.log(`      🎨 Removing background for "${queuedFile.originalName}"...`);
                 // Try background removal on the resized image
                 processedBlob = await processImageForAI(resizedFile);
               } catch (bgError) {
-                console.warn(`Background removal failed for ${queuedFile.originalName}, using original image`, bgError);
+                console.warn(`      ⚠️ Background removal failed for "${queuedFile.originalName}", using original image`, bgError);
                 // Fallback: Use converted file (or original if conversion failed too, though unlikely here)
                 processedBlob = queuedFile.file;
               }
@@ -555,16 +561,20 @@ export const useStore = create<AppState>()(
               type: processedBlob.type,
             });
 
+            console.log(`      🎨 Extracting colors for "${queuedFile.originalName}"...`);
             // Extract colors
             const colors = await extractColors(processedFile);
 
+            console.log(`      📦 Compressing for storage "${queuedFile.originalName}"...`);
             // Compress for storage
             const compressedBlob = await compressImage(processedFile);
 
+            console.log(`      💾 Saving to storage "${queuedFile.originalName}"...`);
             // Save to storage
             const imageId = `${Date.now()}-${queuedFile.id}`;
             await saveImage(imageId, compressedBlob);
 
+            console.log(`      👕 Adding to wardrobe "${queuedFile.originalName}"...`);
             // Add to wardrobe
             get().addClothingItem({
               id: imageId,
@@ -574,12 +584,35 @@ export const useStore = create<AppState>()(
               colors: colors,
             });
 
+            // Update progress
+            set((state) => ({
+              batchUploadProgress: {
+                ...state.batchUploadProgress,
+                processedCount: state.batchUploadProgress.processedCount + 1,
+                successCount: state.batchUploadProgress.successCount + 1,
+              },
+            }));
+
+            const duration = Date.now() - startTime;
+            console.log(`      ✅ Completed: "${queuedFile.originalName}" (${duration}ms)`);
+
             return {
               id: queuedFile.id,
               status: 'success',
             };
           } catch (error) {
-            console.error(`Failed to process ${queuedFile.originalName}:`, error);
+            const duration = Date.now() - startTime;
+            console.error(`      ❌ Failed: "${queuedFile.originalName}" (${duration}ms)`, error);
+
+            // Update progress
+            set((state) => ({
+              batchUploadProgress: {
+                ...state.batchUploadProgress,
+                processedCount: state.batchUploadProgress.processedCount + 1,
+                errorCount: state.batchUploadProgress.errorCount + 1,
+              },
+            }));
+
             return {
               id: queuedFile.id,
               status: 'error',
@@ -595,9 +628,15 @@ export const useStore = create<AppState>()(
           let isSequentialFallback = false; // Switch to true if errors occur
           let currentIndex = 0;
 
+          console.log('🚀 Starting sliding window batch processing');
+          console.log(`📊 Total files: ${files.length}`);
+          console.log(`⚙️ Initial window size: ${PARALLEL_LIMIT} (parallel mode)`);
+          console.log('─────────────────────────────────────────');
+
           while (currentIndex < files.length) {
             // Check if should continue
             if (!get().shouldContinueBatchUpload) {
+              console.log('🛑 Upload cancelled by user');
               break;
             }
 
@@ -607,28 +646,49 @@ export const useStore = create<AppState>()(
 
             if (batch.length === 0) break;
 
+            // SLIDING WINDOW VISUALIZATION
+            console.log(`\n🔹 Window Position: [${currentIndex}..${currentIndex + batch.length - 1}] of ${files.length - 1}`);
+            console.log(`   Mode: ${isSequentialFallback ? '🐢 Sequential (1 at a time)' : '⚡ Parallel (' + PARALLEL_LIMIT + ' at a time)'}`);
+            console.log(`   Batch size: ${batch.length}`);
+            console.log(`   Files in this window: ${batch.map(f => f.originalName).join(', ')}`);
+
             try {
               if (batch.length === 1) {
                 // Sequential execution
+                console.log(`   ⏳ Processing file sequentially...`);
                 await processFile(batch[0]);
+                console.log(`   ✅ File processed successfully`);
               } else {
                 // Parallel execution
+                console.log(`   ⏳ Processing ${batch.length} files in parallel...`);
                 const results = await Promise.allSettled(batch.map(file => processFile(file)));
-                
+
                 // Check for failures to trigger fallback
                 const hasFailures = results.some(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.status === 'error'));
-                if (hasFailures) {
-                  console.warn('Parallel batch encountered errors. Switching to sequential mode for stability.');
+                const successCount = results.filter(r => r.status === 'fulfilled' && r.value.status === 'success').length;
+                const failCount = batch.length - successCount;
+
+                console.log(`   ✅ ${successCount} succeeded, ❌ ${failCount} failed`);
+
+                if (hasFailures && !isSequentialFallback) {
+                  console.warn('   ⚠️ Errors detected! Switching to SEQUENTIAL mode for remaining files...');
                   isSequentialFallback = true;
                 }
               }
             } catch (err) {
-              console.error("Batch loop error:", err);
+              console.error("   ❌ Batch loop error:", err);
               isSequentialFallback = true;
             }
 
+            // Slide window forward
+            const previousIndex = currentIndex;
             currentIndex += batch.length;
+            console.log(`   👉 Sliding window: ${previousIndex} → ${currentIndex} (moved ${batch.length} positions)`);
+            console.log(`   Progress: ${currentIndex}/${files.length} (${Math.round((currentIndex / files.length) * 100)}%)`);
           }
+
+          console.log('\n─────────────────────────────────────────');
+          console.log('✨ Sliding window processing complete!');
         };
 
         // Process all files
