@@ -72,32 +72,39 @@ export const OutfitHistory = () => {
     return groups;
   }, [filteredOutfits]);
 
-  const OutfitCard = ({ outfit }: { outfit: Outfit }) => (
-    <div className="rounded-xl overflow-hidden shadow-md bg-white dark:bg-gray-800">
-      {/* Items Preview */}
-      <div className="grid grid-cols-3 gap-1 p-1">
-        {outfit.items.slice(0, 3).map((item) => (
-          <div key={item.id}>
-            <HistoryItemImage itemId={item.id} category={item.category} />
-          </div>
-        ))}
-      </div>
+  const OutfitCard = ({ outfit }: { outfit: Outfit }) => {
+    // Determine grid columns based on number of items
+    const gridCols = outfit.items.length <= 3 ? 'grid-cols-3' :
+                     outfit.items.length === 4 ? 'grid-cols-2' :
+                     'grid-cols-3';
 
-      {/* Outfit Info */}
-      <div className="p-3">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {new Date(outfit.createdAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          })}
+    return (
+      <div className="rounded-xl overflow-hidden shadow-md bg-white dark:bg-gray-800">
+        {/* Items Preview */}
+        <div className={`grid ${gridCols} gap-1 p-1`}>
+          {outfit.items.map((item) => (
+            <div key={item.id}>
+              <HistoryItemImage itemId={item.id} category={item.category} />
+            </div>
+          ))}
         </div>
-        <div className="text-xs mt-1 text-gray-500">
-          {outfit.items.length} items
+
+        {/* Outfit Info */}
+        <div className="p-3">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            {new Date(outfit.createdAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </div>
+          <div className="text-xs mt-1 text-gray-500">
+            {outfit.items.length} items
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (outfitHistory.length === 0) {
     return (

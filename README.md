@@ -71,7 +71,7 @@
 ### Prerequisites
 
 - Node.js 18+ and npm
-- OpenAI API key (for AI features)
+- OpenAI API key (for optional AI features)
 
 ### Installation
 
@@ -241,6 +241,12 @@ interface QueuedFile {
 
 ### Recently Completed
 
+#### Clerk Authentication Removal ✅
+- **Simplified Architecture**: Removed Clerk authentication to streamline the app
+- **Local-Only Storage**: All data stays on device (IndexedDB + localStorage) with no cloud dependencies
+- **Zero Setup Required**: No authentication keys or sign-in needed - app works immediately
+- **Package Size Reduction**: Removed 7 npm packages (~2MB from node_modules)
+
 #### Phase 18B: Performance & Reliability Enhancements ✅
 - **Parallel Processing with Fallback**: Batch uploads now process 3 files concurrently, automatically switching to sequential mode on errors
 - **Image Resize Optimization**: All images resized to max 1024px before background removal to prevent mobile crashes
@@ -366,4 +372,4 @@ This project is part of the UW AISC UW PC25 program.
 
 ---
 
-**Last Updated**: 18th November 2025
+**Last Updated**: 20th November 2025
