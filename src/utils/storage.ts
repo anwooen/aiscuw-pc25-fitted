@@ -58,12 +58,19 @@ const urlCache = new Map<string, string>();
 export const getImageURL = async (id: string): Promise<string | null> => {
   // Check cache first
   if (urlCache.has(id)) {
+    console.log(`[Storage] Cache hit for ID:`, id);
     return urlCache.get(id) || null;
   }
 
+  console.log(`[Storage] Fetching from IndexedDB for ID:`, id);
   const blob = await getImage(id);
-  if (!blob) return null;
 
+  if (!blob) {
+    console.warn(`[Storage] ✗ Blob not found in IndexedDB for ID:`, id);
+    return null;
+  }
+
+  console.log(`[Storage] ✓ Blob found, size:`, blob.size, 'bytes');
   const url = URL.createObjectURL(blob);
   urlCache.set(id, url);
   return url;

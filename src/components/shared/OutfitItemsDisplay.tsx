@@ -15,10 +15,18 @@ const OutfitItemImage = memo(({ itemId, category }: { itemId: string; category: 
   useEffect(() => {
     const loadImage = async () => {
       try {
+        console.log(`[OutfitItemImage] Loading image for ${category}:`, itemId);
         const url = await getImageURL(itemId);
-        setImageUrl(url);
+
+        if (url) {
+          console.log(`[OutfitItemImage] ✓ Image loaded for ${category}:`, itemId);
+          setImageUrl(url);
+        } else {
+          console.warn(`[OutfitItemImage] ✗ Image not found in IndexedDB for ${category}:`, itemId);
+          setImageUrl(null);
+        }
       } catch (error) {
-        console.error('Failed to load image:', error);
+        console.error(`[OutfitItemImage] Failed to load image for ${category}:`, itemId, error);
       }
     };
     loadImage();
