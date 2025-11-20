@@ -523,7 +523,6 @@ export const useStore = create<AppState>()(
          */
         const processFile = async (queuedFile: QueuedFile): Promise<{ id: string; status: 'success' | 'error' }> => {
           const startTime = Date.now();
-          console.log(`      🔄 Starting: "${queuedFile.originalName}"`);
 
           try {
             if (!queuedFile.category) {
@@ -533,12 +532,10 @@ export const useStore = create<AppState>()(
             // Reuse preprocessed blob if available
             let processedBlob: Blob;
             if (queuedFile.processedBlob) {
-              console.log(`      💾 Using preprocessed blob for "${queuedFile.originalName}"`);
               processedBlob = queuedFile.processedBlob;
             } else {
               // Phase 18: Robust fallback logic & Performance Optimization
               try {
-                console.log(`      🔧 Converting and resizing "${queuedFile.originalName}"...`);
                 const convertedFile = await convertImageIfNeeded(queuedFile.file);
 
                 // OPTIMIZATION: Resize image BEFORE background removal
@@ -546,11 +543,10 @@ export const useStore = create<AppState>()(
                 const resizedBlob = await compressImage(convertedFile, 1, 1024);
                 const resizedFile = new File([resizedBlob], queuedFile.originalName, { type: resizedBlob.type });
 
-                console.log(`      🎨 Removing background for "${queuedFile.originalName}"...`);
                 // Try background removal on the resized image
                 processedBlob = await processImageForAI(resizedFile);
               } catch (bgError) {
-                console.warn(`      ⚠️ Background removal failed for "${queuedFile.originalName}", using original image`, bgError);
+                console.warn(`      ⚠️ Background removal failed, using original image`, bgError);
                 // Fallback: Use converted file (or original if conversion failed too, though unlikely here)
                 processedBlob = queuedFile.file;
               }
@@ -561,20 +557,16 @@ export const useStore = create<AppState>()(
               type: processedBlob.type,
             });
 
-            console.log(`      🎨 Extracting colors for "${queuedFile.originalName}"...`);
             // Extract colors
             const colors = await extractColors(processedFile);
 
-            console.log(`      📦 Compressing for storage "${queuedFile.originalName}"...`);
             // Compress for storage
             const compressedBlob = await compressImage(processedFile);
 
-            console.log(`      💾 Saving to storage "${queuedFile.originalName}"...`);
             // Save to storage
             const imageId = `${Date.now()}-${queuedFile.id}`;
             await saveImage(imageId, compressedBlob);
 
-            console.log(`      👕 Adding to wardrobe "${queuedFile.originalName}"...`);
             // Add to wardrobe
             get().addClothingItem({
               id: imageId,
@@ -594,7 +586,7 @@ export const useStore = create<AppState>()(
             }));
 
             const duration = Date.now() - startTime;
-            console.log(`      ✅ Completed: "${queuedFile.originalName}" (${duration}ms)`);
+            console.log(`   ⏱️  Took ${duration}ms`);
 
             return {
               id: queuedFile.id,
@@ -602,7 +594,7 @@ export const useStore = create<AppState>()(
             };
           } catch (error) {
             const duration = Date.now() - startTime;
-            console.error(`      ❌ Failed: "${queuedFile.originalName}" (${duration}ms)`, error);
+            console.error(`   ⏱️  Failed after ${duration}ms:`, error);
 
             // Update progress
             set((state) => ({
@@ -621,74 +613,129 @@ export const useStore = create<AppState>()(
         };
 
         /**
-         * Process files in parallel batches with sliding window and fallback
+         * Process files with true sliding window - maintains constant parallelism
          */
         const processBatch = async (files: QueuedFile[]): Promise<void> => {
-          const PARALLEL_LIMIT = 3; // Start with 3 concurrent uploads
+          const PARALLEL_LIMIT = 3; // Maintain 3 concurrent uploads at all times
+          let activeCount = 0; // Track how many are currently processing
+          let nextIndex = 0; // Next file to process
           let isSequentialFallback = false; // Switch to true if errors occur
-          let currentIndex = 0;
+          let errorCount = 0;
+          const processed = new Set<number>(); // Track which indices have been processed
+          const activeFiles = new Map<number, string>(); // Track currently processing files: index -> filename
 
-          console.log('🚀 Starting sliding window batch processing');
+          console.log('🚀 Starting TRUE sliding window batch processing');
           console.log(`📊 Total files: ${files.length}`);
-          console.log(`⚙️ Initial window size: ${PARALLEL_LIMIT} (parallel mode)`);
+          console.log(`⚙️ Concurrency limit: ${PARALLEL_LIMIT} (maintains constant parallelism)`);
           console.log('─────────────────────────────────────────');
 
-          while (currentIndex < files.length) {
-            // Check if should continue
-            if (!get().shouldContinueBatchUpload) {
-              console.log('🛑 Upload cancelled by user');
-              break;
-            }
+          /**
+           * Display current window state
+           */
+          const showWindow = () => {
+            const activeIndices = Array.from(activeFiles.keys()).sort((a, b) => a - b);
+            const windowStr = activeIndices.map(i => `[${i}]`).join(', ');
+            const fileNames = activeIndices.map(i => activeFiles.get(i)).join(', ');
 
-            // Determine batch size based on current mode
-            const currentBatchSize = isSequentialFallback ? 1 : PARALLEL_LIMIT;
-            const batch = files.slice(currentIndex, currentIndex + currentBatchSize);
+            console.log(`\n📍 CURRENT WINDOW: ${windowStr}`);
+            console.log(`   Processing: ${fileNames}`);
+            console.log(`   Active: ${activeCount} | Completed: ${processed.size}/${files.length} (${Math.round((processed.size / files.length) * 100)}%)`);
+          };
 
-            if (batch.length === 0) break;
-
-            // SLIDING WINDOW VISUALIZATION
-            console.log(`\n🔹 Window Position: [${currentIndex}..${currentIndex + batch.length - 1}] of ${files.length - 1}`);
-            console.log(`   Mode: ${isSequentialFallback ? '🐢 Sequential (1 at a time)' : '⚡ Parallel (' + PARALLEL_LIMIT + ' at a time)'}`);
-            console.log(`   Batch size: ${batch.length}`);
-            console.log(`   Files in this window: ${batch.map(f => f.originalName).join(', ')}`);
-
-            try {
-              if (batch.length === 1) {
-                // Sequential execution
-                console.log(`   ⏳ Processing file sequentially...`);
-                await processFile(batch[0]);
-                console.log(`   ✅ File processed successfully`);
-              } else {
-                // Parallel execution
-                console.log(`   ⏳ Processing ${batch.length} files in parallel...`);
-                const results = await Promise.allSettled(batch.map(file => processFile(file)));
-
-                // Check for failures to trigger fallback
-                const hasFailures = results.some(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.status === 'error'));
-                const successCount = results.filter(r => r.status === 'fulfilled' && r.value.status === 'success').length;
-                const failCount = batch.length - successCount;
-
-                console.log(`   ✅ ${successCount} succeeded, ❌ ${failCount} failed`);
-
-                if (hasFailures && !isSequentialFallback) {
-                  console.warn('   ⚠️ Errors detected! Switching to SEQUENTIAL mode for remaining files...');
-                  isSequentialFallback = true;
-                }
+          return new Promise((resolve) => {
+            /**
+             * Start processing next file if slot available
+             */
+            const startNext = () => {
+              // Check if should continue
+              if (!get().shouldContinueBatchUpload) {
+                console.log('🛑 Upload cancelled by user');
+                if (activeCount === 0) resolve();
+                return;
               }
-            } catch (err) {
-              console.error("   ❌ Batch loop error:", err);
-              isSequentialFallback = true;
-            }
 
-            // Slide window forward
-            const previousIndex = currentIndex;
-            currentIndex += batch.length;
-            console.log(`   👉 Sliding window: ${previousIndex} → ${currentIndex} (moved ${batch.length} positions)`);
-            console.log(`   Progress: ${currentIndex}/${files.length} (${Math.round((currentIndex / files.length) * 100)}%)`);
-          }
+              // Check if we're done
+              if (nextIndex >= files.length && activeCount === 0) {
+                console.log('\n─────────────────────────────────────────');
+                console.log('✨ Sliding window processing complete!');
+                resolve();
+                return;
+              }
 
-          console.log('\n─────────────────────────────────────────');
-          console.log('✨ Sliding window processing complete!');
+              // Determine limit based on fallback mode
+              const currentLimit = isSequentialFallback ? 1 : PARALLEL_LIMIT;
+
+              // Start new tasks while we have capacity and files remaining
+              while (activeCount < currentLimit && nextIndex < files.length) {
+                const fileIndex = nextIndex;
+                const file = files[fileIndex];
+
+                // Skip if already processed (shouldn't happen, but safety check)
+                if (processed.has(fileIndex)) {
+                  nextIndex++;
+                  continue;
+                }
+
+                nextIndex++;
+                activeCount++;
+                activeFiles.set(fileIndex, file.originalName);
+
+                console.log(`\n▶️  STARTING [${fileIndex}]: "${file.originalName}"`);
+                console.log(`   Mode: ${isSequentialFallback ? '🐢 Sequential' : '⚡ Parallel'} | Slots: ${activeCount}/${currentLimit}`);
+
+                // Show current window after adding this file
+                showWindow();
+
+                // Process file asynchronously
+                processFile(file)
+                  .then((result) => {
+                    processed.add(fileIndex);
+                    activeCount--;
+                    activeFiles.delete(fileIndex);
+
+                    console.log(`\n⏹️  COMPLETED [${fileIndex}]: "${file.originalName}" (${result.status === 'success' ? '✅ success' : '❌ error'})`);
+
+                    if (result.status === 'error') {
+                      errorCount++;
+                      // Switch to sequential if we hit 2+ errors in parallel mode
+                      if (!isSequentialFallback && errorCount >= 2) {
+                        console.warn('   ⚠️ Multiple errors detected! Switching to SEQUENTIAL mode for stability...');
+                        isSequentialFallback = true;
+                      }
+                    }
+
+                    // Show window after this file completes
+                    if (activeFiles.size > 0) {
+                      showWindow();
+                    }
+
+                    // Immediately try to fill the freed slot
+                    startNext();
+                  })
+                  .catch((err) => {
+                    console.error(`\n❌ FAILED [${fileIndex}]: "${file.originalName}"`, err);
+                    processed.add(fileIndex);
+                    activeCount--;
+                    activeFiles.delete(fileIndex);
+                    errorCount++;
+
+                    if (!isSequentialFallback && errorCount >= 2) {
+                      console.warn('   ⚠️ Multiple errors detected! Switching to SEQUENTIAL mode...');
+                      isSequentialFallback = true;
+                    }
+
+                    if (activeFiles.size > 0) {
+                      showWindow();
+                    }
+
+                    startNext();
+                  });
+              }
+            };
+
+            // Kick off initial batch
+            startNext();
+          });
         };
 
         // Process all files
