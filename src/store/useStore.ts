@@ -4,10 +4,12 @@ import type { AppState, ClothingItem, Outfit, UserProfile, StylePreference, Weat
 import { applyPhase13Defaults } from '../utils/profileDefaults';
 import { getWeather, getUserLocation } from '../services/api';
 import { convertImageIfNeeded } from '../utils/imageFormatConverter';
-import { processImageForAI } from '../utils/backgroundRemoval';
 import { compressImage, extractColors, compressForAI } from '../utils/imageCompression';
 import { saveImage } from '../utils/storage';
 import { analyzeClothing } from '../services/api';
+import type { ProcessingMode } from '../processors/ImageProcessor.interface';
+import { getProcessor } from '../processors';
+import { startMetric, endMetric } from '../utils/processingMetrics';
 
 const initialProfile: UserProfile = {
   hasCompletedOnboarding: false,
@@ -103,6 +105,9 @@ export const useStore = create<AppState>()(
       todaysPick: null,
       dailySuggestions: [],
       theme: 'light',
+
+      // Phase 19: Image Processing Mode
+      processingMode: 'fast', // Default to fast mode for better performance
 
       // Phase 18: Global Weather State
       weatherData: null,
@@ -211,6 +216,9 @@ export const useStore = create<AppState>()(
         set((state) => ({
           theme: state.theme === 'light' ? 'dark' : 'light',
         })),
+
+      // Phase 19: Processing Mode Actions
+      setProcessingMode: (mode: ProcessingMode) => set({ processingMode: mode }),
 
       resetApp: () =>
         set({
@@ -372,8 +380,20 @@ export const useStore = create<AppState>()(
             const resizedBlob = await compressImage(converted, 1, 1024);
             const resizedFile = new File([resizedBlob], file.name, { type: resizedBlob.type });
 
-            // Run background removal on resized image
-            const processedBlob = await processImageForAI(resizedFile);
+            // Run image processing using selected mode (fast crop or ML removal)
+            const metricId = startMetric(file.name, get().processingMode);
+            let processedBlob: Blob;
+
+            try {
+              const processor = getProcessor(get().processingMode);
+              processedBlob = await processor.process(resizedFile, (progress, stage) => {
+                console.log(`[${file.name}] Processing: ${stage} (${progress}%)`);
+              });
+              endMetric(metricId, true);
+            } catch (processingError) {
+              endMetric(metricId, false, processingError instanceof Error ? processingError.message : String(processingError));
+              throw processingError; // Re-throw to maintain existing error handling
+            }
 
             // Create base64 preview from processed blob
             const reader = new FileReader();
@@ -535,6 +555,7 @@ export const useStore = create<AppState>()(
               processedBlob = queuedFile.processedBlob;
             } else {
               // Phase 18: Robust fallback logic & Performance Optimization
+              let metricId: string | undefined;
               try {
                 const convertedFile = await convertImageIfNeeded(queuedFile.file);
 
@@ -543,10 +564,19 @@ export const useStore = create<AppState>()(
                 const resizedBlob = await compressImage(convertedFile, 1, 1024);
                 const resizedFile = new File([resizedBlob], queuedFile.originalName, { type: resizedBlob.type });
 
-                // Try background removal on the resized image
-                processedBlob = await processImageForAI(resizedFile);
+                // Run image processing using selected mode (fast crop or ML removal)
+                metricId = startMetric(queuedFile.originalName, get().processingMode);
+                const processor = getProcessor(get().processingMode);
+                processedBlob = await processor.process(resizedFile, (progress, stage) => {
+                  console.log(`   [${queuedFile.originalName}] ${stage}: ${progress}%`);
+                });
+                endMetric(metricId, true);
               } catch (bgError) {
-                console.warn(`      ⚠️ Background removal failed, using original image`, bgError);
+                // Log failure metric if we started tracking
+                if (metricId) {
+                  endMetric(metricId, false, bgError instanceof Error ? bgError.message : String(bgError));
+                }
+                console.warn(`      ⚠️ Image processing failed, using original image`, bgError);
                 // Fallback: Use converted file (or original if conversion failed too, though unlikely here)
                 processedBlob = queuedFile.file;
               }

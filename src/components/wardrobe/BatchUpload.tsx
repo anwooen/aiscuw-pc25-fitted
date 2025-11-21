@@ -1,8 +1,10 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle, BarChart3, Download, Trash2 } from 'lucide-react';
 import { useBatchAnalysis } from '../../hooks/useBatchAnalysis';
 import { Button } from '../shared/Button';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { useStore } from '../../store/useStore';
+import { logComparisonTable, exportMetrics, clearMetrics } from '../../utils/processingMetrics';
 
 interface BatchUploadProps {
   onComplete?: () => void;
@@ -24,6 +26,10 @@ const MAX_FILES = 20;
 export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Store state for processing mode
+  const processingMode = useStore((state) => state.processingMode);
+  const setProcessingMode = useStore((state) => state.setProcessingMode);
 
   const {
     queue,
@@ -115,6 +121,32 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
   }, [queue, startUpload]);
 
   /**
+   * Metrics handlers for A/B testing
+   */
+  const handleViewMetrics = useCallback(() => {
+    logComparisonTable();
+  }, []);
+
+  const handleExportMetrics = useCallback(() => {
+    const json = exportMetrics();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fitted-metrics-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleClearMetrics = useCallback(() => {
+    if (window.confirm('Are you sure you want to clear all metrics? This cannot be undone.')) {
+      clearMetrics();
+    }
+  }, []);
+
+  /**
    * Handle complete and close
    */
   const handleComplete = useCallback(() => {
@@ -170,6 +202,85 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
           <p className="text-gray-600 dark:text-gray-400">
             Upload up to {MAX_FILES} clothing items at once
           </p>
+        </div>
+
+        {/* Processing Mode Selector */}
+        <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
+            Processing Mode:
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="processingMode"
+                value="fast"
+                checked={processingMode === 'fast'}
+                onChange={(e) => setProcessingMode(e.target.value as 'fast' | 'quality')}
+                className="mt-1 w-4 h-4 text-uw-purple focus:ring-uw-purple focus:ring-2"
+              />
+              <span className="ml-3 flex-1">
+                <span className="block text-gray-900 dark:text-white font-medium">
+                  ⚡ Fast Crop <span className="text-xs text-gray-500 dark:text-gray-400">(200-500ms/image)</span>
+                </span>
+                <span className="block text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Smart cropping without background removal - Recommended for speed
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="processingMode"
+                value="quality"
+                checked={processingMode === 'quality'}
+                onChange={(e) => setProcessingMode(e.target.value as 'fast' | 'quality')}
+                className="mt-1 w-4 h-4 text-uw-purple focus:ring-uw-purple focus:ring-2"
+              />
+              <span className="ml-3 flex-1">
+                <span className="block text-gray-900 dark:text-white font-medium">
+                  🎨 ML Removal <span className="text-xs text-gray-500 dark:text-gray-400">(2-5s/image)</span>
+                </span>
+                <span className="block text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  AI-powered transparent backgrounds - Slower but higher quality
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Metrics Panel (for A/B testing) */}
+        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-gray-900 dark:text-white">
+              📊 Performance Metrics
+            </label>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Compare Fast vs Quality modes</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleViewMetrics}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+            >
+              <BarChart3 size={14} />
+              View in Console
+            </button>
+            <button
+              onClick={handleExportMetrics}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-300 bg-white dark:bg-gray-800 border border-green-300 dark:border-green-700 rounded hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+            >
+              <Download size={14} />
+              Export JSON
+            </button>
+            <button
+              onClick={handleClearMetrics}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-300 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 size={14} />
+              Clear
+            </button>
+          </div>
         </div>
 
         {/* Upload Zone */}

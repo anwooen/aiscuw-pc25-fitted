@@ -1,5 +1,7 @@
 // Core data types for the Fitted app
 
+import type { ProcessingMode } from '../processors/ImageProcessor.interface';
+
 export type ClothingCategory = 'top' | 'bottom' | 'shoes' | 'accessory' | 'outerwear';
 
 export type StylePreference = 'casual' | 'formal' | 'streetwear' | 'athletic' | 'preppy';
@@ -153,6 +155,9 @@ export interface AppState {
   dailySuggestions: Outfit[];
   theme: 'light' | 'dark';
 
+  // Phase 19: Image Processing Mode
+  processingMode: ProcessingMode;
+
   // Phase 18: Global Weather State
   weatherData: WeatherData | null;
   weatherLoading: boolean;
@@ -182,6 +187,9 @@ export interface AppState {
   resetApp: () => void;
   removeDuplicateOutfits: () => void;
   resetOnboarding: () => void;
+
+  // Phase 19: Processing Mode Actions
+  setProcessingMode: (mode: ProcessingMode) => void;
 
   // Phase 18: Weather Actions
   setWeather: (weather: WeatherData | null) => void;
