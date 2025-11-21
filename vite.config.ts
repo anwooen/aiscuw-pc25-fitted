@@ -17,6 +17,9 @@ export default defineConfig({
       },
     },
   },
+  worker: {
+    format: 'es', // Use ES module format for Web Workers (required for code-splitting)
+  },
   build: {
     rollupOptions: {
       external: ['/api/**'],
