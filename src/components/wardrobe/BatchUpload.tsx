@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle, Sparkles } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { useBatchAnalysis } from '../../hooks/useBatchAnalysis';
 import { Button } from '../shared/Button';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
@@ -245,29 +245,11 @@ export const BatchUpload: React.FC<BatchUploadProps> = ({ onComplete, onCancel }
                   className="w-full h-full object-cover"
                 />
 
-                {/* AI Confidence Badge (top-left) */}
-                {queuedFile.aiStatus === 'success' && queuedFile.aiConfidence !== undefined && (
-                  <div className={`absolute top-2 left-2 z-30 px-2 py-1 rounded-full shadow-sm flex items-center gap-1 ${
-                    queuedFile.aiConfidence >= 0.8
-                      ? 'bg-green-500 text-white'
-                      : queuedFile.aiConfidence >= 0.5
-                      ? 'bg-yellow-500 text-white'
-                      : 'bg-red-500 text-white'
-                  }`}>
-                    <Sparkles className="w-3 h-3" />
-                    <span className="text-xs font-semibold">{(queuedFile.aiConfidence * 100).toFixed(0)}%</span>
-                  </div>
-                )}
-
                 {/* Category selector for each queued file (pre-analysis) */}
                 {(status === 'idle' || status === 'cancelled') && (
                   <div className="absolute bottom-2 left-2 right-2 z-20 bg-white/95 dark:bg-gray-800/95 rounded-md p-1.5 shadow-lg">
                     <div className="text-[10px] text-gray-600 dark:text-gray-400 mb-1 px-1">
-                      {queuedFile.aiStatus === 'success' && queuedFile.category
-                        ? '✨ AI suggested'
-                        : queuedFile.aiStatus === 'failed'
-                        ? '⚠️ AI failed - select manually'
-                        : 'Select category'}
+                      Select category
                     </div>
                     <select
                       value={queuedFile.category ?? ''}

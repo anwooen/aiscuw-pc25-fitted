@@ -3,7 +3,7 @@ import { useStore } from './store/useStore';
 import { useWardrobe } from './hooks/useWardrobe';
 import { useOutfitGenerator } from './hooks/useOutfitGenerator';
 import { Lock, Unlock, Sparkles, Home, Shirt, History, Settings, RotateCcw, Wand2 } from 'lucide-react';
-import { MINIMUM_WARDROBE, UserProfile } from './types';
+import { MINIMUM_WARDROBE, UserProfile, AppView } from './types';
 import { AppHeader } from './components/layout/AppHeader';
 
 // Lazy load components for code splitting
@@ -17,8 +17,8 @@ const OutfitHistory = lazy(() => import('./components/profile/OutfitHistory').th
 const ProfileSettings = lazy(() => import('./components/profile/ProfileSettings').then(m => ({ default: m.ProfileSettings })));
 const AIOutfitGenerator = lazy(() => import('./components/outfits/AIOutfitGenerator').then(m => ({ default: m.AIOutfitGenerator })));
 
+
 type OnboardingStep = 'welcome' | 'questionnaire' | 'complete';
-type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'aiGenerator';
 
 // Loading fallback component``
 const LoadingFallback = () => (
@@ -53,6 +53,21 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // Phase 18: Prevent accidental refresh during batch upload
+  const batchStatus = useStore((state) => state.batchUploadStatus);
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (batchStatus === 'preprocessing' || batchStatus === 'uploading') {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires this to be set
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [batchStatus]);
 
   // Update store with daily suggestions when they're generated
   useEffect(() => {
@@ -220,7 +235,7 @@ function App() {
           <AppHeader subtitle="Today's Pick" />
 
           <Suspense fallback={<LoadingFallback />}>
-            <TodaysPick />
+            <TodaysPick onNavigate={setCurrentView} />
           </Suspense>
         </div>
         <BottomNav />
@@ -257,6 +272,7 @@ function App() {
       </>
     );
   }
+
 
   if (currentView === 'settings') {
     return (
@@ -312,7 +328,7 @@ function App() {
           <AppHeader subtitle="Swipe for outfits" />
 
           {/* Swipe Interface */}
-          <div className="h-[calc(100vh-140px)]">
+          <div className="min-h-[calc(100vh-140px)]">
             <Suspense fallback={<LoadingFallback />}>
               <SwipeInterface onNavigate={setCurrentView} />
             </Suspense>

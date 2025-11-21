@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Outfit } from '../../types';
 import { OutfitCard } from './OutfitCard';
 import { SwipeControls } from './SwipeControls';
 import { generateOutfits } from '../../utils/outfitGenerator';
-
-const SWIPE_THRESHOLD = 100;
 
 interface SwipeInterfaceProps {
   onNavigate?: (view: 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings') => void;
@@ -19,23 +15,14 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   const wardrobe = useStore((s) => s.wardrobe ?? []);
   const profile = useStore((s) => s.profile);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Get global weather data from store (Phase 18)
   const weatherData = useStore((s) => s.weatherData);
 
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-25, 25]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
-
-  // Swipe indicator opacities (must be at top level - Rules of Hooks!)
-  const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
-  const likeOpacity = useTransform(x, [0, 100], [0, 1]);
-
   const currentOutfit = dailySuggestions[currentIndex];
 
-  // Generate fallback outfits if needed (MUST be at top level - Rules of Hooks!)
+  // Generate fallback outfits if needed
   useEffect(() => {
     if (dailySuggestions.length === 0 && wardrobe.length > 0) {
       try {
@@ -52,8 +39,8 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Prevent action if disabled or no current outfit
-      if (!currentOutfit || direction) return;
+      // Prevent action if disabled or transitioning
+      if (!currentOutfit || isTransitioning) return;
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -69,29 +56,12 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentOutfit, direction]);
-
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    const swipeDistance = info.offset.x;
-
-    if (Math.abs(swipeDistance) > SWIPE_THRESHOLD) {
-      if (swipeDistance > 0) {
-        // Swiped right - like
-        handleLike();
-      } else {
-        // Swiped left - dislike
-        handleDislike();
-      }
-    } else {
-      // Reset position
-      x.set(0);
-    }
-  };
+  }, [currentOutfit, isTransitioning]);
 
   const handleLike = async () => {
-    if (!currentOutfit) return;
+    if (!currentOutfit || isTransitioning) return;
 
-    setDirection('right');
+    setIsTransitioning(true);
 
     // Add to history with liked status
     const likedOutfit: Outfit = {
@@ -103,51 +73,40 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
     // Set as today's pick if it's the first like
     setTodaysPick(likedOutfit);
 
-    // Show success animation
-    setShowSuccess(true);
-
     // Check if we're at the last outfit
     if (currentIndex === dailySuggestions.length - 1) {
-      // Navigate to history page after animation
+      // Navigate to history page after delay
       setTimeout(() => {
         onNavigate?.('history');
-      }, 600);
+      }, 250);
     } else {
-      // Normal progression
+      // Normal progression - simple delay before showing next outfit
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
-        x.set(0);
-        setDirection(null);
-        setShowSuccess(false);
-      }, 600);
+        setIsTransitioning(false);
+      }, 250);
     }
   };
 
   const handleDislike = async () => {
-    if (!currentOutfit) return;
+    if (!currentOutfit || isTransitioning) return;
 
-    setDirection('left');
+    setIsTransitioning(true);
 
-    // Add to history with disliked status
-    const dislikedOutfit: Outfit = {
-      ...currentOutfit,
-      liked: false,
-    };
-    addOutfit(dislikedOutfit);
+    // Don't save disliked outfits - only liked outfits are saved to history
 
     // Check if we're at the last outfit
     if (currentIndex === dailySuggestions.length - 1) {
-      // Navigate to history page after animation
+      // Navigate to history page after delay
       setTimeout(() => {
         onNavigate?.('history');
-      }, 300);
+      }, 250);
     } else {
-      // Normal progression
+      // Normal progression - simple delay before showing next outfit
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
-        x.set(0);
-        setDirection(null);
-      }, 300);
+        setIsTransitioning(false);
+      }, 250);
     }
   };
 
@@ -168,24 +127,9 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden">
-      {/* Success Animation */}
-      {showSuccess && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none"
-        >
-          <div className="bg-uw-purple text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3">
-            <Sparkles className="w-6 h-6" />
-            <span className="text-lg font-bold">Today's Pick!</span>
-          </div>
-        </motion.div>
-      )}
-
+    <div className="flex flex-col w-full max-w-md mx-auto px-4 py-4 overflow-x-hidden min-h-[calc(100vh-4rem)]">
       {/* Card Stack */}
-      <div className="relative flex-1 mb-4">
+      <div className="relative mb-4">
         {/* Next card preview */}
         {dailySuggestions[currentIndex + 1] && (
           <div className="absolute inset-0 opacity-50 scale-95">
@@ -193,47 +137,10 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
           </div>
         )}
 
-        {/* Current swipeable card */}
-        <motion.div
-          className="absolute inset-0 cursor-default hover:cursor-grab active:cursor-grabbing"
-          style={{
-            x,
-            rotate,
-            opacity,
-          }}
-          drag="x"
-          dragConstraints={{ left: -300, right: 300 }}
-          dragElastic={0.2}
-          onDragEnd={handleDragEnd}
-          animate={
-            direction === 'right'
-              ? { x: 500, opacity: 0 }
-              : direction === 'left'
-              ? { x: -500, opacity: 0 }
-              : {}
-          }
-          transition={{ duration: 0.3 }}
-        >
-          {/* Swipe indicators */}
-          <motion.div
-            className="absolute top-8 left-8 z-10 bg-red-500 text-white px-6 py-2 rounded-lg font-bold text-xl rotate-[-20deg] border-4 border-red-500"
-            style={{
-              opacity: nopeOpacity,
-            }}
-          >
-            NOPE
-          </motion.div>
-          <motion.div
-            className="absolute top-8 right-8 z-10 bg-green-500 text-white px-6 py-2 rounded-lg font-bold text-xl rotate-[20deg] border-4 border-green-500"
-            style={{
-              opacity: likeOpacity,
-            }}
-          >
-            LIKE
-          </motion.div>
-
+        {/* Current card - no animation, just show it */}
+        <div className="relative">
           <OutfitCard outfit={currentOutfit} />
-        </motion.div>
+        </div>
       </div>
 
       {/* Swipe Controls */}
@@ -241,7 +148,7 @@ export function SwipeInterface({ onNavigate }: SwipeInterfaceProps) {
         <SwipeControls
           onDislike={handleDislike}
           onLike={handleLike}
-          disabled={!currentOutfit}
+          disabled={!currentOutfit || isTransitioning}
         />
       </div>
 

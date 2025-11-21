@@ -153,9 +153,6 @@ export interface AppState {
   dailySuggestions: Outfit[];
   theme: 'light' | 'dark';
 
-  // Phase 14: Clerk Authentication
-  clerkUserId: string | null;
-
   // Phase 18: Global Weather State
   weatherData: WeatherData | null;
   weatherLoading: boolean;
@@ -185,9 +182,6 @@ export interface AppState {
   resetApp: () => void;
   removeDuplicateOutfits: () => void;
   resetOnboarding: () => void;
-
-  // Phase 14: Clerk Authentication Actions
-  setClerkUserId: (userId: string | null) => void;
 
   // Phase 18: Weather Actions
   setWeather: (weather: WeatherData | null) => void;
@@ -274,3 +268,5 @@ export interface WeatherResponse {
   weather?: WeatherData;
   error?: string;
 }
+
+export type AppView = 'wardrobe' | 'swipe' | 'todaysPick' | 'history' | 'settings' | 'aiGenerator';

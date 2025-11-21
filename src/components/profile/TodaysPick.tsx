@@ -4,12 +4,18 @@ import { WardrobeUpload } from '../wardrobe/WardrobeUpload';
 import { meetsMinimumRequirements } from '../../utils/outfitGenerator';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { OutfitDisplayCard } from '../shared/OutfitDisplayCard';
+import { AppView } from '../../types';
 
-export const TodaysPick = () => {
+interface TodaysPickProps {
+  onNavigate?: (view: AppView) => void;
+}
+
+export const TodaysPick = ({ onNavigate }: TodaysPickProps) => {
   const { todaysPick, setTodaysPick, wardrobe, outfitHistory } = useStore();
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const canSwipe = meetsMinimumRequirements(wardrobe);
+  const hasHistory = outfitHistory.some(o => o.liked);
 
   const handleReSwipe = () => {
     // DEBUG: Log current state
@@ -58,12 +64,21 @@ export const TodaysPick = () => {
               Swipe through outfits to pick today's look!
             </p>
             {canSwipe ? (
-              <button
-                onClick={handleReSwipe}
-                className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
-              >
-                Start Swiping
-              </button>
+              hasHistory ? (
+                <button
+                  onClick={handleReSwipe}
+                  className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Generate Pick
+                </button>
+              ) : (
+                <button
+                  onClick={() => onNavigate?.('swipe')}
+                  className="px-6 py-3 bg-white text-uw-purple font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Do your first pick
+                </button>
+              )
             ) : (
               <>
                 <button
@@ -99,9 +114,9 @@ export const TodaysPick = () => {
     <div className="pb-20 bg-gray-50 dark:bg-gray-900">
       {/* Phase 18: Weather widget moved to Header (global) */}
 
-      {/* Outfit Display with 3D Effect */}
+      {/* Outfit Display */}
       <div className="max-w-2xl mx-auto p-6 pt-3">
-        <OutfitDisplayCard items={todaysPick.items} depth="medium" />
+        <OutfitDisplayCard items={todaysPick.items} />
 
         {/* Action Buttons - Below Card */}
         <div className="mt-6 space-y-3">
@@ -116,18 +131,6 @@ export const TodaysPick = () => {
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             Selected on {new Date(todaysPick.createdAt).toLocaleDateString()}
           </div>
-        </div>
-
-        {/* Tips Section */}
-        <div className="mt-6 p-4 rounded-xl bg-purple-50 dark:bg-gray-800">
-          <h3 className="font-semibold mb-2 text-uw-purple dark:text-white">
-            Style Tips
-          </h3>
-          <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-            <li>• Take a photo to remember this outfit combination</li>
-            <li>• Check the weather before heading out</li>
-            <li>• Add accessories to personalize your look</li>
-          </ul>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ interface OutfitCardProps {
 
 export const OutfitCard = memo(({ outfit }: OutfitCardProps) => {
   return (
-    <OutfitDisplayCard items={outfit.items} depth="deep">
+    <OutfitDisplayCard items={outfit.items}>
       {/* Outfit Info Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">

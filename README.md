@@ -25,9 +25,10 @@
 - **Photo Upload**: Capture or upload clothing items via camera/file picker
 - **Automatic Background Removal**: Always-on background removal using client-side WASM
 - **AI Analysis**: Optional GPT-4 Vision analysis for category, color, and style detection
-- **Batch Upload**: Upload up to 20 images simultaneously
+- **Batch Upload**: Upload up to 20 images simultaneously with intelligent parallel processing
 - **Smart Organization**: Category-based organization (tops, bottoms, shoes, accessories, outerwear)
 - **Minimum Unlock**: Requires 10 items to unlock swipe mode (5 tops, 3 bottoms, 2 shoes)
+- **Image Optimization**: Automatic resize to 1024px before processing to prevent mobile crashes
 
 ### Outfit Generation
 - **Local Algorithm**: Smart outfit generation based on color compatibility, style weighting, and category matching
@@ -48,6 +49,7 @@
 - **Weather Widget**: Persistent global weather display across all pages
 - **Batch Upload State**: Upload progress persists across page navigation
 - **Responsive Design**: Optimized for mobile and desktop
+- **Parallel Processing**: Adaptive upload system with automatic fallback to sequential on errors
 
 ## Tech Stack
 
@@ -69,7 +71,7 @@
 ### Prerequisites
 
 - Node.js 18+ and npm
-- OpenAI API key (for AI features)
+- OpenAI API key (for optional AI features)
 
 ### Installation
 
@@ -118,9 +120,9 @@ src/
 │   ├── outfits/           # AIOutfitGenerator
 │   ├── layout/            # Header, Navigation, ThemeToggle
 │   └── shared/            # Button, Card, Modal
-├── hooks/                 # useLocalStorage, useWardrobe, useAIOutfitRecommendations
+├── hooks/                 # useLocalStorage, useWardrobe, useAIOutfitRecommendations, useBackgroundRemoval, useImageConverter
 ├── store/                 # Zustand store (useStore.ts)
-├── utils/                 # outfitGenerator, imageCompression, backgroundRemoval
+├── utils/                 # outfitGenerator, imageCompression, backgroundRemoval, imageFormatConverter
 ├── services/              # API client (api.ts)
 ├── types/                 # TypeScript interfaces
 └── api/                   # Serverless functions
@@ -143,7 +145,8 @@ Returns: {
   colors: string[],
   styles: string[],
   description: string,
-  confidence: number
+  confidence: number,
+  suggestedCategory: ClothingCategory
 }
 ```
 
@@ -153,7 +156,10 @@ POST /api/recommend-outfits
 Body: {
   wardrobe: ClothingItem[],
   weather: WeatherData,
-  preferences: UserProfile
+  preferences: UserProfile,
+  timeContext?: string,
+  locationContext?: string,
+  occasion?: string
 }
 Returns: {
   outfits: Outfit[],
@@ -167,7 +173,9 @@ GET /api/weather?lat=47.6062&lon=-122.3321
 Returns: {
   temperature: number,
   condition: string,
-  precipitation: number
+  precipitation: number,
+  humidity: number,
+  windSpeed: number
 }
 ```
 
@@ -213,9 +221,37 @@ interface UserProfile {
 }
 ```
 
+### QueuedFile
+```typescript
+interface QueuedFile {
+  id: string;
+  file: File;
+  preview: string;
+  originalName: string;
+  processedBlob?: Blob;
+  processedBase64?: string;
+  aiAnalysis?: AIClothingAnalysis;
+  aiConfidence?: number;
+  aiStatus?: 'pending' | 'analyzing' | 'success' | 'failed';
+  category?: ClothingCategory;
+}
+```
+
 ## Development Status
 
 ### Recently Completed
+
+#### Clerk Authentication Removal ✅
+- **Simplified Architecture**: Removed Clerk authentication to streamline the app
+- **Local-Only Storage**: All data stays on device (IndexedDB + localStorage) with no cloud dependencies
+- **Zero Setup Required**: No authentication keys or sign-in needed - app works immediately
+- **Package Size Reduction**: Removed 7 npm packages (~2MB from node_modules)
+
+#### Phase 18B: Performance & Reliability Enhancements ✅
+- **Parallel Processing with Fallback**: Batch uploads now process 3 files concurrently, automatically switching to sequential mode on errors
+- **Image Resize Optimization**: All images resized to max 1024px before background removal to prevent mobile crashes
+- **Batch Mode Persistence**: Upload view state persists across navigation based on global queue status
+- **Syntax Error Fixes**: Removed orphaned code blocks and unused constants for cleaner codebase
 
 #### Phase 18: Global Weather Widget & Persistent Upload State ✅
 - Weather state moved to global Zustand store with 30-min cache
@@ -263,15 +299,30 @@ interface UserProfile {
 - React.memo for ClothingItem and OutfitCard
 - useCallback/useMemo for expensive operations
 - Image compression (512px, 60% quality for AI)
+- **Image resize optimization (1024px before background removal)**
 - IndexedDB for efficient image storage
 - Background removal cached (WASM model loaded once)
 - Weather data cached (30-minute refresh)
+- **Adaptive parallel processing (3 concurrent → 1 sequential on errors)**
+- **Promise.allSettled for robust batch operations**
+
+## Batch Upload Processing
+
+The batch upload system features intelligent parallel processing:
+
+1. **Start Optimistic**: Processes 3 files concurrently for speed
+2. **Monitor for Errors**: Tracks failures in each batch using Promise.allSettled
+3. **Fallback to Safe Mode**: Automatically switches to sequential (1 file at a time) when errors occur
+4. **Continue Reliably**: All remaining files process one-by-one for maximum stability
+
+This adaptive approach balances speed with reliability, especially important for mobile devices with limited resources.
 
 ## Cost Analysis
 
 **Per 100 Images:**
 - Background removal: $0 (client-side WASM)
 - Image format conversion: $0 (client-side Canvas API)
+- Image resize optimization: $0 (client-side Canvas API)
 - AI analysis: $0.15 (optional, $0.0015 per image)
 - Outfit recommendations: $0.10 ($0.001 per request)
 
@@ -321,4 +372,4 @@ This project is part of the UW AISC UW PC25 program.
 
 ---
 
-**Last Updated**: 2025-11-17 (Phase 18 Complete)
+**Last Updated**: 20th November 2025

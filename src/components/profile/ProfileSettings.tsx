@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { Moon, Sun, Palette, TrendingUp, Trash2, AlertCircle, Shirt, Briefcase, Zap, Activity, BookOpen, User } from 'lucide-react';
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
+import { Moon, Sun, Palette, TrendingUp, Trash2, AlertCircle, Shirt, Briefcase, Zap, Activity, BookOpen } from 'lucide-react';
 import type { StylePreference } from '../../types';
 import type { LucideIcon } from 'lucide-react';
 
@@ -69,67 +68,6 @@ export const ProfileSettings = () => {
 
   return (
     <div className="space-y-6">
-        {/* Account Authentication Section */}
-        <div className={`rounded-xl p-6 ${
-          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-        } shadow-md`}>
-          <SignedOut>
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-uw-purple/10 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                <User className="w-5 h-5 text-uw-purple dark:text-purple-400" />
-              </div>
-              <div className="flex-1">
-                <h2 className={`text-lg font-semibold mb-2 ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Account
-                </h2>
-                <p className={`text-sm mb-4 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Sign in to sync your wardrobe across devices and access from anywhere.
-                </p>
-                <div className="flex gap-3">
-                  <SignInButton mode="modal">
-                    <button className="px-4 py-2 bg-uw-purple hover:bg-uw-purple/90 text-white rounded-lg font-semibold transition-colors">
-                      Sign In
-                    </button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <button className={`px-4 py-2 font-semibold rounded-lg transition-colors border-2 ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 hover:bg-gray-600 text-purple-400 border-purple-400'
-                        : 'bg-white hover:bg-gray-50 text-uw-purple border-uw-purple'
-                    }`}>
-                      Sign Up
-                    </button>
-                  </SignUpButton>
-                </div>
-              </div>
-            </div>
-          </SignedOut>
-
-          <SignedIn>
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <UserButton />
-              </div>
-              <div className="flex-1">
-                <h2 className={`text-lg font-semibold mb-2 ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Account
-                </h2>
-                <p className={`text-sm ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Your wardrobe is synced and accessible across all your devices.
-                </p>
-              </div>
-            </div>
-          </SignedIn>
-        </div>
-
         {/* Theme Toggle */}
         <div className={`rounded-xl p-6 ${
           theme === 'dark' ? 'bg-gray-800' : 'bg-white'
