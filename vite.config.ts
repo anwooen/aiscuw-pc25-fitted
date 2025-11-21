@@ -11,7 +11,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'https://fitted-uw-wardrobe.vercel.app',
+        target: 'https://fitted-uw.vercel.app',
         changeOrigin: true,
         secure: false,
       },
